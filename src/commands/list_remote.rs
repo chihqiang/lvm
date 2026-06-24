@@ -12,11 +12,7 @@ fn extract_version(s: &str) -> &str {
 }
 
 /// 列出远程可用版本，支持仅显示 LTS
-pub(crate) fn list_remote(
-    registry: &PluginRegistry,
-    language: &str,
-    lts_only: bool,
-) -> Result<()> {
+pub(crate) fn list_remote(registry: &PluginRegistry, language: &str, lts_only: bool) -> Result<()> {
     let plugin = get_plugin(registry, language)?;
     let remote_versions = plugin.list_remote_versions()?;
     let installed = plugin.list_installed()?;

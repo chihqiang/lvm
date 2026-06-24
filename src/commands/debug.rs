@@ -19,11 +19,7 @@ pub(crate) fn debug(registry: &PluginRegistry) {
     println!("Registered languages:");
     for name in registry.list_names() {
         if let Some(plugin) = registry.get(name) {
-            let cur = plugin
-                .current_version()
-                .ok()
-                .flatten()
-                .unwrap_or_default();
+            let cur = plugin.current_version().ok().flatten().unwrap_or_default();
             println!("  {name}: current={cur}");
         }
     }

@@ -8,9 +8,9 @@ use std::sync::OnceLock;
 
 use anyhow::{Context, Result, bail};
 
-use crate::config;
 use super as plugin;
 use super::Plugin;
+use crate::config;
 
 // ─── Go 专用配置 ───
 
@@ -288,12 +288,7 @@ impl Plugin for GoPlugin {
             bail!("Go {version} is not installed");
         }
 
-        plugin::use_version_symlinks(
-            &version_dir,
-            &Self::current_link(),
-            &Self::bin_link(),
-            "go",
-        )?;
+        plugin::use_version_symlinks(&version_dir, &Self::current_link(), &Self::bin_link(), "go")?;
 
         // 创建 per-version 包目录用于数据隔离
         let (packages_dir, bin_dir_name) = go_packages_bin_path();

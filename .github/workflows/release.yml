@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install musl tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          target/${{ matrix.target }}/release/lvm --help
+          target/${{ matrix.target }}/release/lvm --version
+
+      - name: Package
+        shell: bash
+        run: |
+          RELEASE_DIR="target/${{ matrix.target }}/release"
+          ARCHIVE="lvm-${{ matrix.target }}"
+          BIN="lvm${{ runner.os == 'Windows' && '.exe' || '' }}"
+
+          cd "${{ github.workspace }}"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            # add binary (cd into dir so it lands at archive root)
+            (cd "$RELEASE_DIR" && 7z a "$ARCHIVE.zip" "$BIN")
+            # add docs into the same archive
+            7z a "$RELEASE_DIR/$ARCHIVE.zip" README.md LICENSE
+          else
+            tar czf "$RELEASE_DIR/$ARCHIVE.tar.gz" -C "$GITHUB_WORKSPACE" README.md LICENSE -C "$RELEASE_DIR" "$BIN"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lvm-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/lvm-${{ matrix.target }}.*z*
+          compression-level: 0
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lvm-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: sha256sum lvm-*.*z* > checksums.txt
+
+      - name: Create release
+        uses: chihqiang/upload-asset-action@v0.2.0
+        with:
+          files: |
+            lvm-*.*z*
+            checksums.txt

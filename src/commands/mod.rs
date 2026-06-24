@@ -36,10 +36,7 @@ pub(crate) use which::which;
 use crate::plugin::{Plugin, PluginRegistry};
 use anyhow::{Context, Result};
 
-pub(crate) fn get_plugin<'a>(
-    registry: &'a PluginRegistry,
-    name: &str,
-) -> Result<&'a dyn Plugin> {
+pub(crate) fn get_plugin<'a>(registry: &'a PluginRegistry, name: &str) -> Result<&'a dyn Plugin> {
     registry.get(name).with_context(|| {
         let available = registry.list_names().join(config::list_separator());
         format!("Unknown language '{name}', available: {available}")

@@ -11,9 +11,9 @@ use anyhow::{Context, Result, bail};
 
 use semver::Version;
 
-use crate::config;
 use super as plugin;
 use super::Plugin;
+use crate::config;
 
 // ─── Node.js 专用配置 ───
 
@@ -158,12 +158,7 @@ impl NodePlugin {
 
     /// 构造下载文件名（用于临时缓存）
     fn tarball_filename(version: &str) -> String {
-        tarball_filename(
-            version,
-            target_os(),
-            target_arch(),
-            plugin::archive_ext(),
-        )
+        tarball_filename(version, target_os(), target_arch(), plugin::archive_ext())
     }
 
     fn fetch_text(url_path: &str) -> Result<String> {

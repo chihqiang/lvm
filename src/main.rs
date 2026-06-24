@@ -53,10 +53,8 @@ fn run() -> Result<()> {
             for (lang, ver) in &plans {
                 commands::install(&registry, lang, ver.as_deref(), no_default)?;
             }
-            if save {
-                if let Some(msg) = dispatch::write_save(&registry, last_plan.as_ref())? {
-                    output::info(msg);
-                }
+            if save && let Some(msg) = dispatch::write_save(&registry, last_plan.as_ref())? {
+                output::info(msg);
             }
             if let Some(from_ver) = reinstall_from {
                 for (lang, _) in &plans {
@@ -77,10 +75,8 @@ fn run() -> Result<()> {
             for (lang, ver) in &plans {
                 commands::use_version(&registry, lang, ver.as_deref(), set_default)?;
             }
-            if save {
-                if let Some(msg) = dispatch::write_save(&registry, last_plan.as_ref())? {
-                    output::info(msg);
-                }
+            if save && let Some(msg) = dispatch::write_save(&registry, last_plan.as_ref())? {
+                output::info(msg);
             }
             Ok(())
         }
