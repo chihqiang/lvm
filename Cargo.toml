@@ -1,0 +1,22 @@
+[package]
+name = "lvm"
+version = "0.0.1"
+edition = "2024"
+license = "Apache-2.0"
+description = "Language Version Manager - unified version management for Node.js, Go, and more"
+repository = "https://github.com/chihqiang/lvm"
+keywords = ["version-manager", "node", "go", "cli", "dev-tools"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+anyhow = "1"
+clap = "4"
+clap_complete = "4"
+indicatif = "0.18.4"
+ureq = "2"
+semver = "1.0"
+tar = "0.4"
+flate2 = "1.1"
+sha2 = "0.10"
+serde_json = "1"
+zip = "2"
