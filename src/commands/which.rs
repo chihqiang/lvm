@@ -1,12 +1,17 @@
 use crate::plugin::PluginRegistry;
 
 use super::get_plugin;
-use anyhow::Result;
+use anyhow::{Context, Result};
 
-/// 显示指定版本可执行文件的路径
 pub(crate) fn which(registry: &PluginRegistry, language: &str, version: &str) -> Result<()> {
-    let plugin = get_plugin(registry, language)?;
-    let path = plugin.binary_path(version)?;
+    let p = get_plugin(registry, language)?;
+    let ver = match version {
+        "current" => p
+            .current_version()?
+            .with_context(|| format!("No active version for {language}"))?,
+        v => v.to_string(),
+    };
+    let path = p.binary_path(&ver)?;
     println!("{path}");
     Ok(())
 }

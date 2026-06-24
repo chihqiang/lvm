@@ -1,19 +1,19 @@
-pub mod alias;
-pub mod cache;
-pub mod cli;
-pub mod current;
-pub mod debug;
-pub mod env;
-pub mod hook;
-pub mod install;
-pub mod list;
-pub mod list_remote;
-pub mod output;
-pub mod reinstall;
-pub mod unalias;
-pub mod uninstall;
-pub mod use_version;
-pub mod which;
+pub(crate) mod alias;
+pub(crate) mod cache;
+pub(crate) mod cli;
+pub(crate) mod current;
+pub(crate) mod debug;
+pub(crate) mod env;
+pub(crate) mod hook;
+pub(crate) mod install;
+pub(crate) mod list;
+pub(crate) mod list_remote;
+pub(crate) mod output;
+pub(crate) mod reinstall;
+pub(crate) mod unalias;
+pub(crate) mod uninstall;
+pub(crate) mod use_version;
+pub(crate) mod which;
 
 use crate::config;
 
@@ -43,7 +43,6 @@ pub(crate) fn get_plugin<'a>(registry: &'a PluginRegistry, name: &str) -> Result
     })
 }
 
-/// 返回指定语言版本的可执行文件所在目录
 pub(crate) fn binary_dir(
     registry: &PluginRegistry,
     language: &str,

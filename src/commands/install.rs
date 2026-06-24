@@ -1,22 +1,26 @@
-use crate::plugin::PluginRegistry;
+use crate::plugin::{self, PluginRegistry};
 
 use super::get_plugin;
-use super::output;
 use anyhow::Result;
 
-/// 安装指定语言版本，可选择是否设为默认
+fn flush() {
+    for msg in plugin::drain_reports() {
+        println!("{msg}");
+    }
+}
+
 pub(crate) fn install(
     registry: &PluginRegistry,
     language: &str,
     version: Option<&str>,
     no_default: bool,
 ) -> Result<()> {
-    let plugin = get_plugin(registry, language)?;
-    let installed_version = plugin.install(version)?;
-    output::flush_plugin();
-    plugin.use_version(&installed_version, !no_default)?;
-    output::flush_plugin();
-    plugin.post_install(&installed_version)?;
-    output::flush_plugin();
+    let p = get_plugin(registry, language)?;
+    let installed_version = p.install(version)?;
+    flush();
+    p.use_version(&installed_version, !no_default)?;
+    flush();
+    p.post_install(&installed_version)?;
+    flush();
     Ok(())
 }

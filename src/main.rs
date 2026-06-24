@@ -101,13 +101,6 @@ fn run() -> Result<()> {
             let version = sub
                 .get_one::<String>("version")
                 .map_or("current", String::as_str);
-            if version == "current" {
-                let plugin = commands::get_plugin(&registry, language)?;
-                let Some(cur) = plugin.current_version()? else {
-                    bail!("No active version for {language}");
-                };
-                return commands::which(&registry, language, &cur);
-            }
             commands::which(&registry, language, version)
         }
         Some(("alias", sub)) => {
