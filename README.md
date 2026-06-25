@@ -97,7 +97,8 @@ lvm current go
 | `lvm which <language> [version]` | Show the binary path for a version (defaults to current) |
 | `lvm env` | Output shell environment variable setup script (LVM_HOME, GOPATH, PATH) |
 | `lvm env --shell <bash\|zsh\|fish>` | Output shell completion script |
-| `lvm hook` | Output bash/zsh auto-switch hook (auto-switches when entering a directory containing `.lvmrc`) |
+| `lvm hook [--shell bash|zsh|fish|powershell]` | Output shell auto-switch hook (bash: `PROMPT_COMMAND`, zsh: `chpwd`, fish: `--on-variable PWD`, powershell: `prompt`) |
+| `lvm prune <language> [--keep N]` | Remove all but N newest versions (skips current/default). Default keep=3 |
 | `lvm cache dir` | Show the download cache directory |
 | `lvm cache clear` | Clear the download cache |
 | `lvm debug` | Show debug info (LVM_HOME, PATH, registered languages, current versions, etc.) |
@@ -149,11 +150,11 @@ lvm unalias node stable          # Delete an alias
 
 ### `default-packages` — Auto-installed global packages (Node.js only)
 
-Write one package name per line in `~/.lvm/default-packages` (supports `#` comments):
+Write one package per line in `~/.lvm/default-packages` (supports `#` comments). Use `package@version` to pin a specific version for compatibility:
 
 ```
 # Auto-installed after each Node.js installation
-pnpm
+pnpm@8.15.9
 typescript
 eslint
 ```
@@ -167,7 +168,7 @@ eslint
 - **Per-version isolation**: Packages for each version are fully isolated. `go install` goes to `$GOPATH/bin` (points to current version), `npm install -g` installs to the version directory — no sharing between versions
 - **Symlink switching**: Lossless, atomic version switching
 - **Offline mode**: `--offline` uses cache only
-- **Shell auto-switch**: `lvm hook` outputs bash/zsh hook scripts that auto-switch versions when entering directories with `.lvmrc`
+- **Shell auto-switch**: `lvm hook` outputs hook scripts for bash/zsh/fish/powershell that auto-switch versions when entering directories with `.lvmrc`
 
 ### Mirror Configuration
 
@@ -189,7 +190,7 @@ eval "$(lvm hook)"   # .lvmrc auto-switch hook
 ```
 
 - **`lvm env`**: Outputs `LVM_HOME`, `GOPATH`, `PATH` environment variables. Windows outputs cmd.exe syntax.
-- **`lvm hook`**: Outputs bash/zsh auto-switch script. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook — automatically runs `lvm use` when entering a directory containing `.lvmrc`. Not available on Windows; PATH must be configured manually.
+- **`lvm hook`**: Outputs auto-switch script. Defaults to detecting the current shell; use `--shell` to override. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook, fish uses `--on-variable PWD`, powershell overrides the `prompt` function — automatically runs `lvm use` when entering a directory containing `.lvmrc`. Not available on Windows (unless `--shell powershell` is explicitly given).
 - **`lvm env --shell bash|zsh|fish`**: Outputs command completion scripts.
 - **Node.js**: npm global packages are installed to the corresponding version directory; not shared after switching versions.
 - **Go**: `GOPATH` is automatically set to `$LVM_HOME/current/go/packages` (symlink dynamically points to the current version). Binaries installed via `go install` are isolated from the system and other versions.
