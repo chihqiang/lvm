@@ -41,7 +41,10 @@ pub(crate) fn flush() {
     }
 }
 
-pub(crate) fn get_language<'a>(registry: &'a LanguageRegistry, name: &str) -> Result<&'a dyn Language> {
+pub(crate) fn get_language<'a>(
+    registry: &'a LanguageRegistry,
+    name: &str,
+) -> Result<&'a dyn Language> {
     registry.get(name).with_context(|| {
         let available = registry.list_names().join(config::list_separator());
         format!("Unknown language '{name}', available: {available}")

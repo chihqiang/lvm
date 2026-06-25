@@ -10,7 +10,11 @@ fn extract_version(s: &str) -> &str {
 }
 
 /// 列出远程可用版本，支持仅显示 LTS
-pub(crate) fn list_remote(registry: &LanguageRegistry, language: &str, lts_only: bool) -> Result<()> {
+pub(crate) fn list_remote(
+    registry: &LanguageRegistry,
+    language: &str,
+    lts_only: bool,
+) -> Result<()> {
     let lang = get_language(registry, language)?;
     let remote_versions = lang.list_remote_versions()?;
     let installed = lang.list_installed()?;

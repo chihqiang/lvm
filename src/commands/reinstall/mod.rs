@@ -84,11 +84,12 @@ pub(crate) fn reinstall_packages(
         "Reinstalling {} global package(s)...",
         packages.len()
     ));
-    let status = Command::new(to_bin_dir.join(format!("{}{}", pkg_manager, language::exe_suffix())))
-        .args(["install", "-g", "--quiet"])
-        .args(&packages)
-        .status()
-        .context("Failed to install packages")?;
+    let status =
+        Command::new(to_bin_dir.join(format!("{}{}", pkg_manager, language::exe_suffix())))
+            .args(["install", "-g", "--quiet"])
+            .args(&packages)
+            .status()
+            .context("Failed to install packages")?;
 
     if !status.success() {
         bail!("Failed to reinstall some packages");

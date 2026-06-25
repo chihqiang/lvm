@@ -19,7 +19,8 @@ pub(crate) fn list(registry: &LanguageRegistry, language: &str) -> Result<()> {
         let use_color = config::use_color();
         for v in &formatted {
             if use_color {
-                if v.contains(language::CURRENT_MARKER) || v.contains(language::CURRENT_DEFAULT_MARKER)
+                if v.contains(language::CURRENT_MARKER)
+                    || v.contains(language::CURRENT_DEFAULT_MARKER)
                 {
                     println!(
                         "{}{}{}",
