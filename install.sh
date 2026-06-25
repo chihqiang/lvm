@@ -4,7 +4,7 @@ set -euo pipefail
 GH_REPO="chihqiang/lvm"
 BIN_NAME="lvm"
 INSTALL_DIR="${LVM_INSTALL_DIR:-/usr/local/bin}"
-BASE_URL="https://github.com/$GH_REPO/releases"
+DOWNLOAD_BASE_URL="https://github.com/${GH_REPO}/releases/latest/download"
 
 err() { printf "ERROR: %s\n" "$*" >&2; exit 1; }
 info() { printf "INFO:  %s\n" "$*"; }
@@ -35,7 +35,7 @@ main() {
 
   target=$(detect_target)
   archive_name="${BIN_NAME}-${target}.tar.gz"
-  archive_url="${BASE_URL}/latest/download/${archive_name}"
+  archive_url="${DOWNLOAD_BASE_URL}/${archive_name}"
 
   info "target: ${target}"
 

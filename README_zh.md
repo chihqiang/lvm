@@ -97,7 +97,8 @@ lvm current go
 | `lvm which <language> [version]` | 显示指定版本二进制路径（默认当前） |
 | `lvm env` | 输出 shell 环境变量设置脚本（LVM_HOME、GOPATH、PATH） |
 | `lvm env --shell <bash\|zsh\|fish>` | 输出对应 shell 的补全脚本 |
-| `lvm hook` | 输出 bash/zsh 自动切换 hook（进入含 `.lvmrc` 的目录自动切换） |
+| `lvm hook [--shell bash|zsh|fish|powershell]` | 输出 shell 自动切换 hook（bash: `PROMPT_COMMAND`，zsh: `chpwd`，fish: `--on-variable PWD`，powershell: `prompt`） |
+| `lvm prune <language> [--keep N]` | 删除旧版本，保留最新的 N 个（跳过 current/default）。默认 keep=3 |
 | `lvm cache dir` | 显示下载缓存目录 |
 | `lvm cache clear` | 清空下载缓存 |
 | `lvm debug` | 显示调试信息（LVM_HOME、PATH、已注册语言、当前版本等） |
@@ -149,11 +150,11 @@ lvm unalias node stable          # 删除别名
 
 ### `default-packages` — 安装后自动安装的全局包（仅 Node.js）
 
-在本 `~/.lvm/default-packages` 中每行写一个包名（支持 `#` 注释）：
+在 `~/.lvm/default-packages` 中每行写一个包名（支持 `#` 注释）。使用 `package@version` 可以锁定版本以确保兼容性：
 
 ```
 # 每次安装 Node.js 后自动安装
-pnpm
+pnpm@8.15.9
 typescript
 eslint
 ```
@@ -167,7 +168,7 @@ eslint
 - **Per-version 隔离**：每个版本的包完全隔离。`go install` 安装到 `$GOPATH/bin`（指向当前版本），`npm install -g` 安装到版本目录，切换版本后不共享
 - **符号链接切换**：无损、原子化的版本切换
 - **离线模式**：`--offline` 仅使用缓存
-- **Shell 自动切换**：`lvm hook` 输出 bash/zsh hook 脚本，进入含 `.lvmrc` 的目录时自动切换版本
+- **Shell 自动切换**：`lvm hook` 输出 bash/zsh/fish/powershell hook 脚本，进入含 `.lvmrc` 的目录时自动切换版本
 
 ### 镜像源配置
 
@@ -189,7 +190,7 @@ eval "$(lvm hook)"   # .lvmrc 自动切换 hook
 ```
 
 - **`lvm env`**：输出 `LVM_HOME`、`GOPATH`、`PATH` 环境变量。Windows 输出 cmd.exe 语法。
-- **`lvm hook`**：输出 bash/zsh 自动切换脚本。bash 通过 `PROMPT_COMMAND`，zsh 通过 `chpwd` 钩子，进入含 `.lvmrc` 的目录时自动执行 `lvm use`。Windows 上不可用，需手动配置 PATH。
+- **`lvm hook`**：输出自动切换脚本。默认自动检测当前 shell，可用 `--shell` 指定。bash 通过 `PROMPT_COMMAND`，zsh 通过 `chpwd` 钩子，fish 使用 `--on-variable PWD`，powershell 覆写 `prompt` 函数，进入含 `.lvmrc` 的目录时自动执行 `lvm use`。Windows 上不可用（除非显式 `--shell powershell`）。
 - **`lvm env --shell bash|zsh|fish`**：输出命令补全脚本。
 - **Node.js**：npm 全局包安装到对应版本目录，切换版本后不共享。
 - **Go**：`GOPATH` 自动设为 `$LVM_HOME/current/go/packages`（符号链接动态指向当前版本），`go install` 安装的二进制与系统和其他版本隔离。
