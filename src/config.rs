@@ -44,11 +44,6 @@ pub(crate) fn http_total_timeout() -> Duration {
     Duration::from_mins(5)
 }
 
-/// 下载/校验缓冲区大小（64KB）
-pub(crate) fn download_buffer_size() -> usize {
-    64 * 1024
-}
-
 // ─── 通用字符串常量 ───
 
 /// .lvmrc 文件名
@@ -73,7 +68,7 @@ pub(crate) fn list_separator() -> &'static str {
 
 /// .lvmrc 向上遍历最大层数
 pub(crate) fn max_lvmrc_depth() -> u32 {
-    4096
+    100
 }
 
 // ─── 进度条配置 ───
@@ -101,32 +96,30 @@ fn cache_dir_name() -> &'static str {
 /// 返回 lvm 根目录
 /// 遵循 XDG Base Directory 规范，优先使用 $`XDG_DATA_HOME/lvm`
 /// 回退到 ~/.lvm（Unix）或 %USERPROFILE%\.lvm（Windows）
-/// 均不存在时 fallback 到当前目录的 .lvm 并打印警告
-pub(crate) fn lvm_home() -> PathBuf {
+pub(crate) fn lvm_home() -> Result<PathBuf> {
     if let Ok(data_home) = env::var("XDG_DATA_HOME")
         && !data_home.is_empty()
     {
-        return PathBuf::from(data_home).join("lvm");
+        return Ok(PathBuf::from(data_home).join("lvm"));
     }
     for var in &["HOME", "USERPROFILE"] {
         if let Ok(val) = env::var(var)
             && !val.is_empty()
         {
-            return PathBuf::from(val).join(".lvm");
+            return Ok(PathBuf::from(val).join(".lvm"));
         }
     }
-    eprintln!("Warning: Cannot determine home directory, using ./.lvm in current directory");
-    PathBuf::from(".lvm")
+    bail!("Cannot determine home directory (set $HOME or $XDG_DATA_HOME)")
 }
 
 /// 下载缓存目录
-pub(crate) fn downloads_dir() -> PathBuf {
-    lvm_home().join(downloads_dir_name())
+pub(crate) fn downloads_dir() -> Result<PathBuf> {
+    Ok(lvm_home()?.join(downloads_dir_name()))
 }
 
 /// 通用缓存目录
-pub(crate) fn cache_dir() -> PathBuf {
-    lvm_home().join(cache_dir_name())
+pub(crate) fn cache_dir() -> Result<PathBuf> {
+    Ok(lvm_home()?.join(cache_dir_name()))
 }
 
 // ─── 别名配置 ───
@@ -134,7 +127,7 @@ pub(crate) fn cache_dir() -> PathBuf {
 /// 语言别名目录: ~/.lvm/aliases/{lang}/
 pub(crate) fn aliases_dir(language: &str) -> Result<PathBuf> {
     validate_path_component("language", language)?;
-    Ok(lvm_home().join(aliases_dir_name()).join(language))
+    Ok(lvm_home()?.join(aliases_dir_name()).join(language))
 }
 
 fn validate_path_component(kind: &str, value: &str) -> Result<()> {

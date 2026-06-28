@@ -15,6 +15,19 @@ fn strip_top_level(path: &Path) -> Result<PathBuf> {
     Ok(stripped)
 }
 
+fn cleanup_on_failure(version_dir: &Path, result: Result<()>) -> Result<()> {
+    if let Err(err) = result {
+        if let Err(e) = fs::remove_dir_all(version_dir) {
+            report(format!(
+                "Warning: failed to cleanup {}: {e}",
+                version_dir.display()
+            ));
+        }
+        bail!("{err}")
+    }
+    Ok(())
+}
+
 fn extract_zip(zip_path: &Path, version_dir: &Path) -> Result<()> {
     report("Extracting...");
     let file = fs::File::open(zip_path).context("Failed to open archive")?;
@@ -42,16 +55,7 @@ fn extract_zip(zip_path: &Path, version_dir: &Path) -> Result<()> {
         Ok(())
     })();
 
-    if let Err(err) = result {
-        if let Err(e) = fs::remove_dir_all(version_dir) {
-            report(format!(
-                "Warning: failed to cleanup {}: {e}",
-                version_dir.display()
-            ));
-        }
-        bail!("{err}")
-    }
-    Ok(())
+    cleanup_on_failure(version_dir, result)
 }
 
 fn extract_tarball(tar_path: &Path, version_dir: &Path) -> Result<()> {
@@ -82,16 +86,7 @@ fn extract_tarball(tar_path: &Path, version_dir: &Path) -> Result<()> {
                 .context("Extraction failed")
         });
 
-    if let Err(err) = result {
-        if let Err(e) = fs::remove_dir_all(version_dir) {
-            report(format!(
-                "Warning: failed to cleanup {}: {e}",
-                version_dir.display()
-            ));
-        }
-        bail!("{err}")
-    }
-    Ok(())
+    cleanup_on_failure(version_dir, result)
 }
 
 pub(crate) fn extract_archive(archive_path: &Path, version_dir: &Path) -> Result<()> {

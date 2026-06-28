@@ -49,8 +49,8 @@ fn remove_dir_contents(dir: &std::path::Path) -> Result<()> {
 
 /// 清空下载缓存和版本列表缓存
 pub(crate) fn cache_clear() -> Result<()> {
-    remove_dir_contents(&config::downloads_dir())?;
-    remove_dir_contents(&config::cache_dir())?;
+    remove_dir_contents(&config::downloads_dir()?)?;
+    remove_dir_contents(&config::cache_dir()?)?;
     output::info("Cache cleared");
     Ok(())
 }

@@ -8,26 +8,20 @@ use crate::config;
 use crate::language;
 use crate::language::LanguageRegistry;
 
-/// 判断字符串是否像版本号（数字点号格式或 semver 范围表达式）
 pub(crate) fn is_version_like(s: &str) -> bool {
     let s = s.trim();
     if s.is_empty() {
         return false;
     }
-    if s.contains(char::is_whitespace) {
-        return false;
-    }
-    let stripped = s.trim_start_matches('v');
-    if !stripped.is_empty()
-        && !stripped.starts_with('.')
-        && !stripped.ends_with('.')
-        && !stripped.contains("..")
-        && stripped.chars().any(|c| c.is_ascii_digit())
-        && stripped.chars().all(|c| c.is_ascii_digit() || c == '.')
-    {
+    if VersionReq::parse(s).is_ok() {
         return true;
     }
-    VersionReq::parse(s).is_ok()
+    let stripped = s.trim_start_matches('v');
+    !stripped.is_empty()
+        && !stripped.starts_with('.')
+        && !stripped.ends_with('.')
+        && stripped.chars().any(|c| c.is_ascii_digit())
+        && stripped.chars().all(|c| c.is_ascii_digit() || c == '.')
 }
 
 /// 从 clap 匹配中提取必需参数
@@ -168,7 +162,10 @@ pub(crate) fn execute(
         }
         Some(("cache", sub)) => match sub.subcommand() {
             Some(("dir", _)) => {
-                println!("{}", config::downloads_dir().display());
+                match config::downloads_dir() {
+                    Ok(d) => println!("{}", d.display()),
+                    Err(e) => output::warn(format!("Cannot determine downloads directory: {e}")),
+                }
                 Ok(())
             }
             Some(("clear", _)) => commands::cache_clear(),

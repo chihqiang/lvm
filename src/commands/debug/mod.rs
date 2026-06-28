@@ -4,7 +4,7 @@ use crate::language::LanguageRegistry;
 /// 打印调试信息（系统、注册表、PATH 等）
 pub(crate) fn debug(registry: &LanguageRegistry) {
     let version = env!("CARGO_PKG_VERSION");
-    let home = config::lvm_home();
+    let home = config::lvm_home().unwrap_or_else(|_| std::path::PathBuf::from("./.lvm"));
     let os = std::env::consts::OS;
     let arch = std::env::consts::ARCH;
 
@@ -12,8 +12,18 @@ pub(crate) fn debug(registry: &LanguageRegistry) {
     println!("OS:          {os}");
     println!("Arch:        {arch}");
     println!("LVM_HOME:    {}", home.display());
-    println!("Downloads:   {}", config::downloads_dir().display());
-    println!("Cache:       {}", config::cache_dir().display());
+    println!(
+        "Downloads:   {}",
+        config::downloads_dir()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|_| "<error>".to_string())
+    );
+    println!(
+        "Cache:       {}",
+        config::cache_dir()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|_| "<error>".to_string())
+    );
     println!();
 
     println!("Registered languages:");

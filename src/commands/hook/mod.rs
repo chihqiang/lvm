@@ -2,11 +2,17 @@ use crate::config;
 
 use crate::commands::output;
 
-fn hook_bash() {
-    let lvm_bin = config::lvm_home().join(config::bin_dir_name()).join("lvm");
-    let lvm_bin = lvm_bin.to_string_lossy();
-    let lvmrc = config::lvmrc_filename();
+fn lvm_auto_function() -> (String, String) {
+    let lvm_bin = config::lvm_home()
+        .map(|p| p.join(config::bin_dir_name()).join("lvm"))
+        .unwrap_or_else(|_| std::path::PathBuf::from("lvm"));
+    let lvm_bin = lvm_bin.to_string_lossy().to_string();
+    let lvmrc = config::lvmrc_filename().to_string();
+    (lvm_bin, lvmrc)
+}
 
+fn hook_bash() {
+    let (lvm_bin, lvmrc) = lvm_auto_function();
     println!(
         "__lvm_auto() {{ [[ -f {lvmrc} ]] && command -v \"{lvm_bin}\" &>/dev/null && \"{lvm_bin}\" use 2>/dev/null || true; }}"
     );
@@ -16,10 +22,7 @@ fn hook_bash() {
 }
 
 fn hook_zsh() {
-    let lvm_bin = config::lvm_home().join(config::bin_dir_name()).join("lvm");
-    let lvm_bin = lvm_bin.to_string_lossy();
-    let lvmrc = config::lvmrc_filename();
-
+    let (lvm_bin, lvmrc) = lvm_auto_function();
     println!(
         "__lvm_auto() {{ [[ -f {lvmrc} ]] && command -v \"{lvm_bin}\" &>/dev/null && \"{lvm_bin}\" use 2>/dev/null || true; }}"
     );
@@ -55,9 +58,11 @@ pub(crate) fn hook(shell: Option<&str>) {
             hook_powershell();
         } else {
             output::warn("Shell auto-hook is not supported on Windows");
+            let home_path = config::lvm_home()
+                .unwrap_or_else(|_| std::path::PathBuf::from("./.lvm"));
             output::info(format!(
                 "Manually add {} to your PATH and use 'lvm use' in your project directories",
-                config::lvm_home().join(config::bin_dir_name()).display()
+                home_path.join(config::bin_dir_name()).display()
             ));
         }
         return;
@@ -69,7 +74,9 @@ pub(crate) fn hook(shell: Option<&str>) {
         Some("fish") => hook_fish(),
         Some("powershell") => hook_powershell(),
         None => {
-            let lvm_bin = config::lvm_home().join(config::bin_dir_name()).join("lvm");
+            let lvm_bin = config::lvm_home()
+                .map(|p| p.join(config::bin_dir_name()).join("lvm"))
+                .unwrap_or_else(|_| std::path::PathBuf::from("lvm"));
             let lvm_bin = lvm_bin.to_string_lossy();
             let lvmrc = config::lvmrc_filename();
 

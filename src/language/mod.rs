@@ -11,7 +11,7 @@ mod registry;
 mod report;
 mod version;
 
-pub(crate) use checksum::{fetch_checksums, verify_sha256};
+pub(crate) use checksum::verify_sha256;
 pub(crate) use download::{download_and_install, fetch_from_mirror, fetch_with_cache};
 pub(crate) use fslink::{
     CURRENT_DEFAULT_MARKER, CURRENT_MARKER, DEFAULT_MARKER, archive_ext, exe_suffix,
