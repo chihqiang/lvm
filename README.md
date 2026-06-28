@@ -3,10 +3,12 @@
 A multi-runtime version manager written in Rust. Cross-platform single binary, unified management of various runtime versions, supports global/project automatic switching, built-in mirror acceleration, and environment isolation with no system pollution.
 
 [![Check](https://github.com/chihqiang/lvm/actions/workflows/check.yml/badge.svg)](https://github.com/chihqiang/lvm/actions/workflows/check.yml)
+[![HitCount](https://views.whatilearened.today/views/github/chihqiang/lvm.svg)](https://github.com/chihqiang/lvm)
 [![lvm version](https://img.shields.io/github/v/release/chihqiang/lvm?color=yellow)](https://github.com/chihqiang/lvm/releases)
 [![Rust](https://img.shields.io/badge/rust-stable-blue.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/github/license/chihqiang/lvm)](https://github.com/chihqiang/lvm)
 [![Last commit](https://img.shields.io/github/last-commit/chihqiang/lvm)](https://github.com/chihqiang/lvm)
+
 
 **Language**: [中文](README_zh.md)
 

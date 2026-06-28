@@ -3,6 +3,7 @@
 Rust 实现的多运行时版本管理工具，跨平台单二进制，统一管理各类运行时版本，支持全局 / 项目自动切换，内置镜像加速，环境隔离无系统污染。
 
 [![Check](https://github.com/chihqiang/lvm/actions/workflows/check.yml/badge.svg)](https://github.com/chihqiang/lvm/actions/workflows/check.yml)
+[![HitCount](https://views.whatilearened.today/views/github/chihqiang/lvm.svg)](https://github.com/chihqiang/lvm)
 [![lvm version](https://img.shields.io/github/v/release/chihqiang/lvm?color=yellow)](https://github.com/chihqiang/lvm/releases)
 [![Rust](https://img.shields.io/badge/rust-stable-blue.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/github/license/chihqiang/lvm)](https://github.com/chihqiang/lvm)
