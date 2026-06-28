@@ -84,7 +84,7 @@ lvm current go
 
 | Command | Description |
 |---------|-------------|
-| `lvm install [language] [version]` | 安装指定版本，支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
+| `lvm install [language] [version]` | 安装指定版本，省略参数则安装 `.lvmrc` 中所有语言。支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | 卸载已安装版本 |
 | `lvm use [language] [version]` | 切换当前版本，不指定 version 时自动按 `.lvmrc` → 默认别名 → 最新版查找。支持 `--save`、`--no-default` |
 | `lvm list <language>` | 列出已安装版本（标记 current/default） |
@@ -129,6 +129,8 @@ go=1.22.3
 
 支持 `#` 注释和空行。多语言可写在同一文件中。
 
+执行 `lvm install`（不传参数）会一次安装 `.lvmrc` 中声明的所有版本。
+
 lvm 进入该目录时（需在 shell 配置中 `eval "$(lvm hook)"`）自动切换所有声明的版本。
 
 使用 `--save` / `-w` 可在安装或切换后自动写入：
@@ -147,6 +149,16 @@ lvm alias node                   # 列出所有别名
 lvm alias node default           # 查看 default 别名
 lvm unalias node stable          # 删除别名
 ```
+
+### `--reinstall-packages-from` — 迁移全局包（仅 Node.js）
+
+升级 Node.js 版本时，从旧版本迁移所有全局包：
+
+```bash
+lvm install node 22 --reinstall-packages-from=20.14.0
+```
+
+该命令列出旧版本的全局包，在新版本上重新安装（跳过 `npm`、`corepack`）。
 
 ### `default-packages` — 安装后自动安装的全局包（仅 Node.js）
 

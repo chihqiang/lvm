@@ -84,7 +84,7 @@ lvm current go
 
 | Command | Description |
 |---------|-------------|
-| `lvm install [language] [version]` | Install a version. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
+| `lvm install [language] [version]` | Install a version. Omit both to install all from `.lvmrc`. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | Uninstall a version |
 | `lvm use [language] [version]` | Switch to a version. Without version, resolves via `.lvmrc` → default alias → latest. Supports `--save`, `--no-default` |
 | `lvm list <language>` | List installed versions (marks current/default) |
@@ -129,6 +129,8 @@ go=1.22.3
 
 Supports `#` comments and blank lines. Multiple languages can be specified in the same file.
 
+Run `lvm install` without arguments to install all versions declared in `.lvmrc` at once.
+
 lvm automatically switches all declared versions when entering the directory (requires `eval "$(lvm hook)"` in your shell config).
 
 Use `--save` / `-w` to automatically write `.lvmrc` after install or switch:
@@ -147,6 +149,16 @@ lvm alias node                   # List all aliases
 lvm alias node default           # View the default alias
 lvm unalias node stable          # Delete an alias
 ```
+
+### `--reinstall-packages-from` — Migrate global packages (Node.js only)
+
+When upgrading Node.js versions, reinstall all global packages from a previous version:
+
+```bash
+lvm install node 22 --reinstall-packages-from=20.14.0
+```
+
+This lists global packages from the old version and installs them on the new one (skips `npm`, `corepack`).
 
 ### `default-packages` — Auto-installed global packages (Node.js only)
 
