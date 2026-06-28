@@ -20,5 +20,5 @@ pub(crate) use fslink::{
 pub(crate) use http::{get_url, set_offline};
 pub(crate) use language_trait::Language;
 pub(crate) use registry::LanguageRegistry;
-pub(crate) use report::{drain_reports, report};
+pub(crate) use report::{flush_reports_to_stdout, report};
 pub(crate) use version::{resolve_partial_version, sort_versions};

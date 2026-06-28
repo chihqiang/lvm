@@ -77,12 +77,6 @@ pub(crate) fn execute(
         Some(("install", sub)) => {
             let arg_lang = sub.get_one::<String>("language").map(String::as_str);
             let arg_ver = sub.get_one::<String>("version").map(String::as_str);
-            if arg_lang.is_none() {
-                let mut help = crate::commands::cli::install_subcommand();
-                let _ = help.print_help();
-                println!();
-                return Ok(());
-            }
 
             let save = sub.get_flag("save");
             let lts = sub.get_one::<String>("lts").map(String::as_str);
@@ -103,7 +97,18 @@ pub(crate) fn execute(
             });
             let effective_ver_ref: Option<&str> = lts_ver.as_deref().or(arg_ver);
 
-            let plans = resolve_install_args(arg_lang, effective_ver_ref, registry)?;
+            let plans = match resolve_install_args(arg_lang, effective_ver_ref, registry) {
+                Ok(p) => p,
+                Err(e) => {
+                    if arg_lang.is_none() {
+                        let mut help = crate::commands::cli::install_subcommand();
+                        let _ = help.print_help();
+                        println!();
+                        return Ok(());
+                    }
+                    return Err(e);
+                }
+            };
             let last_plan = plans.last().cloned();
             for (lang, ver) in &plans {
                 commands::install(registry, lang, ver.as_deref(), no_default)?;

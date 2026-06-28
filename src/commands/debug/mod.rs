@@ -15,14 +15,12 @@ pub(crate) fn debug(registry: &LanguageRegistry) {
     println!(
         "Downloads:   {}",
         config::downloads_dir()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|_| "<error>".to_string())
+            .map_or_else(|_| "<error>".to_string(), |p| p.display().to_string())
     );
     println!(
         "Cache:       {}",
         config::cache_dir()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|_| "<error>".to_string())
+            .map_or_else(|_| "<error>".to_string(), |p| p.display().to_string())
     );
     println!();
 

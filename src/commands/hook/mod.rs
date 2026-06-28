@@ -4,8 +4,7 @@ use crate::commands::output;
 
 fn lvm_auto_function() -> (String, String) {
     let lvm_bin = config::lvm_home()
-        .map(|p| p.join(config::bin_dir_name()).join("lvm"))
-        .unwrap_or_else(|_| std::path::PathBuf::from("lvm"));
+        .map_or_else(|_| std::path::PathBuf::from("lvm"), |p| p.join(config::bin_dir_name()).join("lvm"));
     let lvm_bin = lvm_bin.to_string_lossy().to_string();
     let lvmrc = config::lvmrc_filename().to_string();
     (lvm_bin, lvmrc)
@@ -74,11 +73,7 @@ pub(crate) fn hook(shell: Option<&str>) {
         Some("fish") => hook_fish(),
         Some("powershell") => hook_powershell(),
         None => {
-            let lvm_bin = config::lvm_home()
-                .map(|p| p.join(config::bin_dir_name()).join("lvm"))
-                .unwrap_or_else(|_| std::path::PathBuf::from("lvm"));
-            let lvm_bin = lvm_bin.to_string_lossy();
-            let lvmrc = config::lvmrc_filename();
+            let (lvm_bin, lvmrc) = lvm_auto_function();
 
             println!(
                 "__lvm_auto() {{ [[ -f {lvmrc} ]] && command -v \"{lvm_bin}\" &>/dev/null && \"{lvm_bin}\" use 2>/dev/null || true; }}"

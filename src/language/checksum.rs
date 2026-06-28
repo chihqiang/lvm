@@ -9,7 +9,7 @@ use anyhow::{Context, Result, bail};
 pub(crate) fn sha256_of(path: &Path) -> Result<String> {
     let mut file = fs::File::open(path).context("Failed to open file for checksum")?;
     let mut hasher = Sha256::new();
-    let mut buf = [0u8; 65536];
+    let mut buf = [0u8; 16384];
     loop {
         let n = file.read(&mut buf).context("Failed to read for checksum")?;
         if n == 0 {

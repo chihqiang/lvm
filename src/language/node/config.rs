@@ -85,8 +85,7 @@ impl NodeLanguage {
     }
 
     pub(crate) fn cached_tar(version: &str) -> PathBuf {
-        config::downloads_dir()
-            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm/downloads"))
+        config::downloads_dir_or_default()
             .join(tarball_filename(
             version,
             target_os(),

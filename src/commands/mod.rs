@@ -36,9 +36,7 @@ use crate::language::{self, Language, LanguageRegistry};
 use anyhow::{Context, Result};
 
 pub(crate) fn flush() {
-    for msg in language::drain_reports() {
-        println!("{msg}");
-    }
+    language::flush_reports_to_stdout();
 }
 
 pub(crate) fn get_language<'a>(

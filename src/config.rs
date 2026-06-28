@@ -117,6 +117,11 @@ pub(crate) fn downloads_dir() -> Result<PathBuf> {
     Ok(lvm_home()?.join(downloads_dir_name()))
 }
 
+/// `downloads_dir()`, 但如果失败则回退至默认路径
+pub(crate) fn downloads_dir_or_default() -> PathBuf {
+    downloads_dir().unwrap_or_else(|_| PathBuf::from(".lvm/downloads"))
+}
+
 /// 通用缓存目录
 pub(crate) fn cache_dir() -> Result<PathBuf> {
     Ok(lvm_home()?.join(cache_dir_name()))
