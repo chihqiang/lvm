@@ -54,7 +54,9 @@ pub(crate) fn resolve_install_args(
         (Some(lang), None) => Ok(vec![(lang.to_string(), None)]),
         (Some(lang), Some(ver)) => Ok(vec![(lang.to_string(), Some(ver.to_string()))]),
         (None, _) => {
-            let path = config::find_lvmrc().context("No .lvmrc file found")?;
+            let path = config::find_lvmrc().context(
+                "No .lvmrc file found. Create one with language=version entries or specify arguments",
+            )?;
             let map = config::parse_lvmrc(&path)?;
             let vec: Vec<_> = map.into_iter().map(|(k, v)| (k, Some(v))).collect();
             if vec.is_empty() {
@@ -75,6 +77,13 @@ pub(crate) fn execute(
         Some(("install", sub)) => {
             let arg_lang = sub.get_one::<String>("language").map(String::as_str);
             let arg_ver = sub.get_one::<String>("version").map(String::as_str);
+            if arg_lang.is_none() {
+                let mut help = crate::commands::cli::install_subcommand();
+                let _ = help.print_help();
+                println!();
+                return Ok(());
+            }
+
             let save = sub.get_flag("save");
             let lts = sub.get_one::<String>("lts").map(String::as_str);
             let offline = sub.get_flag("offline");

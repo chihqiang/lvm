@@ -10,7 +10,7 @@ fn version_arg(required: bool, help: &'static str) -> Arg {
     Arg::new("version").help(help).required(required)
 }
 
-fn install_subcommand() -> Command {
+pub(crate) fn install_subcommand() -> Command {
     Command::new("install")
         .about("Install a language version")
         .arg(language_arg(false))
