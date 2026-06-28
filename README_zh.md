@@ -84,7 +84,7 @@ lvm current go
 
 | Command | Description |
 |---------|-------------|
-| `lvm install [language] [version]` | 安装指定版本，省略参数则安装 `.lvmrc` 中所有语言。支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
+| `lvm install [language] [version]` | 安装指定版本。省略参数则安装 `.lvmrc` 中所有语言，不存在 `.lvmrc` 时显示帮助。支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | 卸载已安装版本 |
 | `lvm use [language] [version]` | 切换当前版本，不指定 version 时自动按 `.lvmrc` → 默认别名 → 最新版查找。支持 `--save`、`--no-default` |
 | `lvm list <language>` | 列出已安装版本（标记 current/default） |

@@ -84,7 +84,7 @@ lvm current go
 
 | Command | Description |
 |---------|-------------|
-| `lvm install [language] [version]` | Install a version. Omit both to install all from `.lvmrc`. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
+| `lvm install [language] [version]` | Install a version. Omit both to install all from `.lvmrc`, or show help if no `.lvmrc` exists. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | Uninstall a version |
 | `lvm use [language] [version]` | Switch to a version. Without version, resolves via `.lvmrc` → default alias → latest. Supports `--save`, `--no-default` |
 | `lvm list <language>` | List installed versions (marks current/default) |
