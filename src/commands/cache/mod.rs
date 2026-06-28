@@ -9,13 +9,12 @@ fn remove_dir_contents(dir: &std::path::Path) -> Result<()> {
     if !dir.exists() {
         return Ok(());
     }
-    let mut had_error = false;
+    let mut errors: Vec<String> = Vec::new();
     for entry in fs::read_dir(dir).with_context(|| format!("Failed to read {}", dir.display()))? {
         let entry = match entry {
             Ok(e) => e,
             Err(e) => {
                 output::warn(format!("Failed to read entry: {e}"));
-                had_error = true;
                 continue;
             }
         };
@@ -23,11 +22,7 @@ fn remove_dir_contents(dir: &std::path::Path) -> Result<()> {
         let meta = match fs::symlink_metadata(&path) {
             Ok(m) => m,
             Err(e) => {
-                output::warn(format!(
-                    "Failed to read metadata for {}: {e}",
-                    path.display()
-                ));
-                had_error = true;
+                errors.push(format!("failed to read metadata for {}: {e}", path.display()));
                 continue;
             }
         };
@@ -37,12 +32,12 @@ fn remove_dir_contents(dir: &std::path::Path) -> Result<()> {
             fs::remove_dir_all(&path)
         };
         if let Err(e) = result {
-            output::warn(format!("Failed to remove {}: {e}", path.display()));
-            had_error = true;
+            errors.push(format!("failed to remove {}: {e}", path.display()));
         }
     }
-    if had_error {
-        anyhow::bail!("Some cache entries could not be removed");
+    if !errors.is_empty() {
+        let detail = errors.join("; ");
+        anyhow::bail!("Some cache entries could not be removed:\n  {detail}");
     }
     Ok(())
 }

@@ -157,14 +157,19 @@ fn install_default_packages(npm_path: &Path) -> Result<()> {
     }
 
     language::report("Installing default packages...");
-    let status = std::process::Command::new(npm_path)
+    let output = std::process::Command::new(npm_path)
         .args(["install", "-g", "--quiet"])
         .args(&packages)
-        .status()
+        .output()
         .context("Failed to install default packages")?;
 
-    if !status.success() {
-        bail!("Failed to install some default packages");
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stderr = stderr.trim();
+        if stderr.is_empty() {
+            bail!("Failed to install some default packages");
+        }
+        bail!("Failed to install some default packages:\n{stderr}");
     }
 
     language::report("Default packages installed");
