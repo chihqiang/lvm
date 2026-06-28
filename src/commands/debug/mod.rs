@@ -14,13 +14,11 @@ pub(crate) fn debug(registry: &LanguageRegistry) {
     println!("LVM_HOME:    {}", home.display());
     println!(
         "Downloads:   {}",
-        config::downloads_dir()
-            .map_or_else(|_| "<error>".to_string(), |p| p.display().to_string())
+        config::downloads_dir().map_or_else(|_| "<error>".to_string(), |p| p.display().to_string())
     );
     println!(
         "Cache:       {}",
-        config::cache_dir()
-            .map_or_else(|_| "<error>".to_string(), |p| p.display().to_string())
+        config::cache_dir().map_or_else(|_| "<error>".to_string(), |p| p.display().to_string())
     );
     println!();
 

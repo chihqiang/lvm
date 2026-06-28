@@ -22,7 +22,10 @@ fn remove_dir_contents(dir: &std::path::Path) -> Result<()> {
         let meta = match fs::symlink_metadata(&path) {
             Ok(m) => m,
             Err(e) => {
-                errors.push(format!("failed to read metadata for {}: {e}", path.display()));
+                errors.push(format!(
+                    "failed to read metadata for {}: {e}",
+                    path.display()
+                ));
                 continue;
             }
         };
