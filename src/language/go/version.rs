@@ -51,7 +51,9 @@ impl GoLanguage {
     }
 
     fn fetch_versions_json() -> Result<String> {
-        let cache_file = config::cache_dir().join(go_versions_cache_filename());
+        let cache_file = config::cache_dir()
+            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm/cache"))
+            .join(go_versions_cache_filename());
         language::fetch_with_cache(&cache_file, || {
             let url = format!("{}{}", go_mirror(), go_versions_query_suffix());
             let response = language::get_url(&url)

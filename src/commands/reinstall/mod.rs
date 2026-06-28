@@ -50,15 +50,21 @@ pub(crate) fn reinstall_packages(
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let needle = format!("/{modules_dir}/");
     let packages: Vec<String> = stdout
         .lines()
         .filter_map(|line| {
             let normalized = line.trim().replace('\\', "/");
-            if normalized.is_empty() || !normalized.contains(&needle) {
+            let path = std::path::Path::new(&normalized);
+            if !path.components().any(|c| c.as_os_str() == modules_dir) {
                 return None;
             }
-            let name = normalized.rsplit(&needle).next()?;
+            let name = path
+                .components()
+                .rev()
+                .take_while(|c| c.as_os_str() != modules_dir)
+                .last()
+                .and_then(|c| c.as_os_str().to_str());
+            let name = name?;
             if name == pkg_manager || name == "corepack" {
                 return None;
             }

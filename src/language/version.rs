@@ -19,7 +19,7 @@ pub(crate) fn sort_versions(versions: &mut [String]) {
 
 pub(crate) fn resolve_partial_version(
     candidate: &str,
-    avail: &[String],
+    avail: &[Version],
     lang: &str,
 ) -> Result<String> {
     let parts: Vec<&str> = candidate.split('.').collect();
@@ -31,12 +31,12 @@ pub(crate) fn resolve_partial_version(
 
     let best = avail
         .iter()
-        .filter_map(|a| Version::parse(a).ok())
         .filter(|av| {
             want_major.is_none_or(|maj| av.major == maj)
                 && want_minor.is_none_or(|min| av.minor == min)
         })
-        .max();
+        .max()
+        .cloned();
     best.map(|v| v.to_string())
         .ok_or_else(|| anyhow!("Could not find {lang} version matching: {candidate}"))
 }

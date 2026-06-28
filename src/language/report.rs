@@ -9,12 +9,7 @@ fn report_buf() -> &'static Mutex<Vec<String>> {
 fn lock_report_buf() -> std::sync::MutexGuard<'static, Vec<String>> {
     match report_buf().lock() {
         Ok(guard) => guard,
-        Err(poisoned) => {
-            eprintln!("Warning: report buffer was poisoned, resetting");
-            let mut guard = poisoned.into_inner();
-            guard.clear();
-            guard
-        }
+        Err(poisoned) => poisoned.into_inner(),
     }
 }
 

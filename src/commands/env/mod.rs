@@ -6,7 +6,10 @@ use crate::language::{self, LanguageRegistry};
 use crate::commands::{cli, output};
 
 pub(crate) fn env(registry: &LanguageRegistry) {
-    let lvm_home_path = config::lvm_home();
+    let Some(lvm_home_path) = config::lvm_home().ok() else {
+        output::warn("Cannot determine LVM home directory");
+        return;
+    };
     let bin_path = lvm_home_path.join(config::bin_dir_name());
 
     let mut path_entries = Vec::new();

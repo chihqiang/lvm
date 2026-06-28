@@ -6,11 +6,11 @@ use crate::config;
 static OFFLINE: AtomicBool = AtomicBool::new(false);
 
 pub(crate) fn set_offline(offline: bool) {
-    OFFLINE.store(offline, Ordering::SeqCst);
+    OFFLINE.store(offline, Ordering::Release);
 }
 
 pub(crate) fn is_offline() -> bool {
-    OFFLINE.load(Ordering::SeqCst)
+    OFFLINE.load(Ordering::Relaxed)
 }
 
 pub(crate) fn http() -> &'static ureq::Agent {

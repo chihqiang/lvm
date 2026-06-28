@@ -8,26 +8,20 @@ use crate::config;
 use crate::language;
 use crate::language::LanguageRegistry;
 
-/// 判断字符串是否像版本号（数字点号格式或 semver 范围表达式）
 pub(crate) fn is_version_like(s: &str) -> bool {
     let s = s.trim();
     if s.is_empty() {
         return false;
     }
-    if s.contains(char::is_whitespace) {
-        return false;
-    }
-    let stripped = s.trim_start_matches('v');
-    if !stripped.is_empty()
-        && !stripped.starts_with('.')
-        && !stripped.ends_with('.')
-        && !stripped.contains("..")
-        && stripped.chars().any(|c| c.is_ascii_digit())
-        && stripped.chars().all(|c| c.is_ascii_digit() || c == '.')
-    {
+    if VersionReq::parse(s).is_ok() {
         return true;
     }
-    VersionReq::parse(s).is_ok()
+    let stripped = s.trim_start_matches('v');
+    !stripped.is_empty()
+        && !stripped.starts_with('.')
+        && !stripped.ends_with('.')
+        && stripped.chars().any(|c| c.is_ascii_digit())
+        && stripped.chars().all(|c| c.is_ascii_digit() || c == '.')
 }
 
 /// 从 clap 匹配中提取必需参数
@@ -60,7 +54,9 @@ pub(crate) fn resolve_install_args(
         (Some(lang), None) => Ok(vec![(lang.to_string(), None)]),
         (Some(lang), Some(ver)) => Ok(vec![(lang.to_string(), Some(ver.to_string()))]),
         (None, _) => {
-            let path = config::find_lvmrc().context("No .lvmrc file found")?;
+            let path = config::find_lvmrc().context(
+                "No .lvmrc file found. Create one with language=version entries or specify arguments",
+            )?;
             let map = config::parse_lvmrc(&path)?;
             let vec: Vec<_> = map.into_iter().map(|(k, v)| (k, Some(v))).collect();
             if vec.is_empty() {
@@ -81,6 +77,7 @@ pub(crate) fn execute(
         Some(("install", sub)) => {
             let arg_lang = sub.get_one::<String>("language").map(String::as_str);
             let arg_ver = sub.get_one::<String>("version").map(String::as_str);
+
             let save = sub.get_flag("save");
             let lts = sub.get_one::<String>("lts").map(String::as_str);
             let offline = sub.get_flag("offline");
@@ -100,7 +97,18 @@ pub(crate) fn execute(
             });
             let effective_ver_ref: Option<&str> = lts_ver.as_deref().or(arg_ver);
 
-            let plans = resolve_install_args(arg_lang, effective_ver_ref, registry)?;
+            let plans = match resolve_install_args(arg_lang, effective_ver_ref, registry) {
+                Ok(p) => p,
+                Err(e) => {
+                    if arg_lang.is_none() {
+                        let mut help = crate::commands::cli::install_subcommand();
+                        let _ = help.print_help();
+                        println!();
+                        return Ok(());
+                    }
+                    return Err(e);
+                }
+            };
             let last_plan = plans.last().cloned();
             for (lang, ver) in &plans {
                 commands::install(registry, lang, ver.as_deref(), no_default)?;
@@ -168,7 +176,10 @@ pub(crate) fn execute(
         }
         Some(("cache", sub)) => match sub.subcommand() {
             Some(("dir", _)) => {
-                println!("{}", config::downloads_dir().display());
+                match config::downloads_dir() {
+                    Ok(d) => println!("{}", d.display()),
+                    Err(e) => output::warn(format!("Cannot determine downloads directory: {e}")),
+                }
                 Ok(())
             }
             Some(("clear", _)) => commands::cache_clear(),

@@ -28,7 +28,10 @@ impl Language for GoLanguage {
             if let Ok(ver) = semver::Version::parse(v) {
                 ver.to_string()
             } else {
-                let avail = Self::fetch_all_versions()?;
+                let avail: Vec<semver::Version> = Self::fetch_all_versions()?
+                    .iter()
+                    .filter_map(|s| semver::Version::parse(s).ok())
+                    .collect();
                 language::resolve_partial_version(v, &avail, "Go")?
             }
         } else {

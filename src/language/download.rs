@@ -167,7 +167,7 @@ pub(crate) fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()
     };
 
     let mut reader = resp.into_reader();
-    let mut buf = vec![0u8; config::download_buffer_size()];
+    let mut buf = [0u8; 16384];
     let mut downloaded = init_pos;
 
     loop {

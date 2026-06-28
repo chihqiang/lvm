@@ -93,7 +93,10 @@ impl NodeLanguage {
         let resolved = if Version::parse(candidate).is_ok() {
             candidate.to_string()
         } else {
-            let avail = Self::fetch_all_versions()?;
+            let avail: Vec<Version> = Self::fetch_all_versions()?
+                .iter()
+                .filter_map(|s| Version::parse(s).ok())
+                .collect();
             language::resolve_partial_version(candidate, &avail, "Node")?
         };
         Ok((Self::download_url(&resolved), resolved, false))
@@ -101,6 +104,8 @@ impl NodeLanguage {
 }
 
 pub(crate) fn fetch_index_tab() -> Result<String> {
-    let cache_file = config::cache_dir().join(node_versions_cache_filename());
+    let cache_file = config::cache_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from(".lvm/cache"))
+        .join(node_versions_cache_filename());
     language::fetch_with_cache(&cache_file, || NodeLanguage::fetch_text(index_tab_path()))
 }

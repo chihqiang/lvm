@@ -20,6 +20,10 @@ pub trait Language {
         "v"
     }
 
+    fn strip_version_prefix<'a>(&self, version: &'a str) -> &'a str {
+        version.trim_start_matches(self.version_prefix())
+    }
+
     fn subdir_name(&self) -> &str {
         self.name()
     }
@@ -31,15 +35,21 @@ pub trait Language {
     // ─── Path helpers ───
 
     fn lvm_dir(&self) -> PathBuf {
-        config::lvm_home().join(self.subdir_name())
+        config::lvm_home()
+            .expect("LVM home directory is required")
+            .join(self.subdir_name())
     }
 
     fn current_link(&self) -> PathBuf {
-        config::lvm_home().join("current").join(self.subdir_name())
+        config::lvm_home()
+            .expect("LVM home directory is required")
+            .join("current")
+            .join(self.subdir_name())
     }
 
     fn bin_link(&self) -> PathBuf {
         config::lvm_home()
+            .expect("LVM home directory is required")
             .join(config::bin_dir_name())
             .join(format!(
                 "{}{}",
@@ -51,7 +61,7 @@ pub trait Language {
     fn version_dir(&self, version: &str) -> PathBuf {
         let prefix = self.version_prefix();
         self.lvm_dir()
-            .join(format!("{prefix}{}", version.trim_start_matches(prefix)))
+            .join(format!("{prefix}{}", self.strip_version_prefix(version)))
     }
 
     fn is_installed(&self, version_dir: &Path) -> bool {
@@ -96,8 +106,7 @@ pub trait Language {
     }
 
     fn use_version(&self, version: &str, set_default: bool) -> Result<()> {
-        let prefix = self.version_prefix();
-        let version = version.trim_start_matches(prefix);
+        let version = self.strip_version_prefix(version);
         let version_dir = self.version_dir(version);
 
         if !self.is_installed(&version_dir) {
@@ -176,7 +185,7 @@ pub trait Language {
                 let dir_name = target
                     .file_name()
                     .and_then(|n| n.to_str())
-                    .map(|s| s.trim_start_matches(self.version_prefix()).to_string());
+                    .map(|s| self.strip_version_prefix(s).to_string());
                 Ok(dir_name)
             }
             _ => Ok(None),
@@ -184,8 +193,7 @@ pub trait Language {
     }
 
     fn uninstall(&self, version: &str) -> Result<()> {
-        let prefix = self.version_prefix();
-        let version = version.trim_start_matches(prefix);
+        let version = self.strip_version_prefix(version);
         fslink::uninstall_version(
             &self.version_dir(version),
             &self.current_link(),
@@ -197,8 +205,7 @@ pub trait Language {
     }
 
     fn binary_path(&self, version: &str) -> Result<String> {
-        let prefix = self.version_prefix();
-        let version = version.trim_start_matches(prefix);
+        let version = self.strip_version_prefix(version);
         let version_dir = self.version_dir(version);
         let bin = version_dir.join(config::bin_dir_name()).join(format!(
             "{}{}",
