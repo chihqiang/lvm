@@ -9,8 +9,8 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 
 use super::Language;
-use crate::core::http::get_url;
 use crate::language;
+use lvm::core::http::get_url;
 
 pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
 pub(crate) use nvmrc::read_nvmrc;

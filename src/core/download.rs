@@ -62,7 +62,7 @@ fn ensure_downloaded(
     verify(tar_path)
 }
 
-pub(crate) fn download_and_install(
+pub fn download_and_install(
     dl_url: &str,
     tar_path: &Path,
     version: &str,
@@ -126,7 +126,7 @@ fn create_progress_bar(total: u64, position: u64) -> indicatif::ProgressBar {
     bar
 }
 
-pub(crate) fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()> {
+pub fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()> {
     if is_offline() {
         if dest.exists() {
             report("Using cached file (offline mode)");
@@ -206,7 +206,7 @@ pub(crate) fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()
     Ok(())
 }
 
-pub(crate) fn fetch_with_cache(
+pub fn fetch_with_cache(
     cache_file: &Path,
     fetch_fn: impl FnOnce() -> Result<String>,
 ) -> Result<String> {
@@ -228,7 +228,7 @@ pub(crate) fn fetch_with_cache(
     Ok(text)
 }
 
-pub(crate) fn fetch_from_mirror(mirror_url: &str, url_path: &str) -> Result<String> {
+pub fn fetch_from_mirror(mirror_url: &str, url_path: &str) -> Result<String> {
     let url = format!(
         "{}/{}",
         mirror_url.trim_end_matches('/'),

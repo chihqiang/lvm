@@ -2,10 +2,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config;
-use crate::core::fslink;
-use crate::core::report::report;
-use crate::core::version::compare_versions;
 use anyhow::{Context, Result, bail};
+use lvm::core::fslink;
+use lvm::core::report::report;
+use lvm::core::version::compare_versions;
 
 pub trait Language {
     fn name(&self) -> &str;

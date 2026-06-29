@@ -89,7 +89,7 @@ fn extract_tarball(tar_path: &Path, version_dir: &Path) -> Result<()> {
     cleanup_on_failure(version_dir, result)
 }
 
-pub(crate) fn extract_archive(archive_path: &Path, version_dir: &Path) -> Result<()> {
+pub fn extract_archive(archive_path: &Path, version_dir: &Path) -> Result<()> {
     if archive_path.extension().is_some_and(|e| e == "zip") {
         extract_zip(archive_path, version_dir)
     } else {

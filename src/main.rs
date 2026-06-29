@@ -4,9 +4,8 @@
 #![allow(clippy::multiple_crate_versions)]
 
 mod commands;
-mod core;
 
-pub(crate) use crate::core::config;
+pub(crate) use lvm::core::config;
 
 use anyhow::Result;
 

@@ -13,78 +13,78 @@ use std::time::Duration;
 // ─── 目录名常量 ───
 
 /// 二进制文件目录名 (~/.lvm/bin/)
-pub(crate) fn bin_dir_name() -> &'static str {
+pub fn bin_dir_name() -> &'static str {
     "bin"
 }
 
 /// 当前版本软链接目录名 (~/.lvm/current/)
-pub(crate) fn current_dir_name() -> &'static str {
+pub fn current_dir_name() -> &'static str {
     "current"
 }
 
 /// 别名配置目录名 (~/.lvm/aliases/)
-pub(crate) fn aliases_dir_name() -> &'static str {
+pub fn aliases_dir_name() -> &'static str {
     "aliases"
 }
 
 // ─── 超时与缓冲区配置 ───
 
 /// 版本列表缓存 TTL
-pub(crate) fn cache_ttl() -> Duration {
+pub fn cache_ttl() -> Duration {
     Duration::from_mins(5)
 }
 
 /// HTTP 连接超时
-pub(crate) fn http_connect_timeout() -> Duration {
+pub fn http_connect_timeout() -> Duration {
     Duration::from_secs(30)
 }
 
 /// HTTP 读取超时
-pub(crate) fn http_read_timeout() -> Duration {
+pub fn http_read_timeout() -> Duration {
     Duration::from_mins(2)
 }
 
 /// HTTP 总超时
-pub(crate) fn http_total_timeout() -> Duration {
+pub fn http_total_timeout() -> Duration {
     Duration::from_mins(5)
 }
 
 // ─── 通用字符串常量 ───
 
 /// .lvmrc 文件名
-pub(crate) fn lvmrc_filename() -> &'static str {
+pub fn lvmrc_filename() -> &'static str {
     ".lvmrc"
 }
 
 /// "system" 版本关键字
-pub(crate) fn system_version_keyword() -> &'static str {
+pub fn system_version_keyword() -> &'static str {
     "system"
 }
 
 /// LTS 版本前缀
-pub(crate) fn lts_prefix() -> &'static str {
+pub fn lts_prefix() -> &'static str {
     "lts/"
 }
 
 /// 列表分隔符（用于人类可读的列表）
-pub(crate) fn list_separator() -> &'static str {
+pub fn list_separator() -> &'static str {
     ", "
 }
 
 /// .lvmrc 向上遍历最大层数
-pub(crate) fn max_lvmrc_depth() -> u32 {
+pub fn max_lvmrc_depth() -> u32 {
     100
 }
 
 // ─── 进度条配置 ───
 
 /// 进度条模板
-pub(crate) fn progress_bar_template() -> &'static str {
+pub fn progress_bar_template() -> &'static str {
     "[{bar:20}] {percent:3}%  {bytes} / {total_bytes}"
 }
 
 /// 进度条字符
-pub(crate) fn progress_bar_chars() -> &'static str {
+pub fn progress_bar_chars() -> &'static str {
     "=>-"
 }
 
@@ -101,7 +101,7 @@ fn cache_dir_name() -> &'static str {
 /// 返回 lvm 根目录
 /// 遵循 XDG Base Directory 规范，优先使用 $`XDG_DATA_HOME/lvm`
 /// 回退到 ~/.lvm（Unix）或 %USERPROFILE%\.lvm（Windows）
-pub(crate) fn lvm_home() -> Result<PathBuf> {
+pub fn lvm_home() -> Result<PathBuf> {
     if let Ok(data_home) = env::var("XDG_DATA_HOME")
         && !data_home.is_empty()
     {
@@ -118,32 +118,32 @@ pub(crate) fn lvm_home() -> Result<PathBuf> {
 }
 
 /// 下载缓存目录
-pub(crate) fn downloads_dir() -> Result<PathBuf> {
+pub fn downloads_dir() -> Result<PathBuf> {
     Ok(lvm_home()?.join(downloads_dir_name()))
 }
 
 /// `downloads_dir()`, 但如果失败则回退至默认路径
-pub(crate) fn downloads_dir_or_default() -> PathBuf {
+pub fn downloads_dir_or_default() -> PathBuf {
     downloads_dir().unwrap_or_else(|_| default_downloads_dir())
 }
 
 /// 通用缓存目录
-pub(crate) fn cache_dir() -> Result<PathBuf> {
+pub fn cache_dir() -> Result<PathBuf> {
     Ok(lvm_home()?.join(cache_dir_name()))
 }
 
-pub(crate) fn default_cache_dir() -> PathBuf {
+pub fn default_cache_dir() -> PathBuf {
     PathBuf::from(".lvm/cache")
 }
 
-pub(crate) fn default_downloads_dir() -> PathBuf {
+pub fn default_downloads_dir() -> PathBuf {
     PathBuf::from(".lvm/downloads")
 }
 
 // ─── 别名配置 ───
 
 /// 语言别名目录: ~/.lvm/aliases/{lang}/
-pub(crate) fn aliases_dir(language: &str) -> Result<PathBuf> {
+pub fn aliases_dir(language: &str) -> Result<PathBuf> {
     validate_path_component("language", language)?;
     Ok(lvm_home()?.join(aliases_dir_name()).join(language))
 }
@@ -162,7 +162,7 @@ fn validate_path_component(kind: &str, value: &str) -> Result<()> {
 }
 
 /// 获取语言的别名
-pub(crate) fn get_alias(language: &str, name: &str) -> Result<Option<String>> {
+pub fn get_alias(language: &str, name: &str) -> Result<Option<String>> {
     validate_path_component("alias name", name)?;
     let path = aliases_dir(language)?.join(name);
     match fs::read_to_string(&path) {
@@ -176,7 +176,7 @@ pub(crate) fn get_alias(language: &str, name: &str) -> Result<Option<String>> {
 }
 
 /// 设置语言的别名
-pub(crate) fn set_alias(language: &str, name: &str, version: &str) -> Result<()> {
+pub fn set_alias(language: &str, name: &str, version: &str) -> Result<()> {
     validate_path_component("alias name", name)?;
     let version = version.trim_start_matches('v');
     if version != system_version_keyword()
@@ -194,7 +194,7 @@ pub(crate) fn set_alias(language: &str, name: &str, version: &str) -> Result<()>
 }
 
 /// 列出语言的所有别名名
-pub(crate) fn list_alias_names(language: &str) -> Result<Vec<String>> {
+pub fn list_alias_names(language: &str) -> Result<Vec<String>> {
     let dir = aliases_dir(language)?;
     if !dir.exists() {
         return Ok(Vec::new());
@@ -214,17 +214,17 @@ pub(crate) fn list_alias_names(language: &str) -> Result<Vec<String>> {
 }
 
 /// 获取语言默认版本（读取 default 别名）
-pub(crate) fn get_default_version(language: &str) -> Result<Option<String>> {
+pub fn get_default_version(language: &str) -> Result<Option<String>> {
     get_alias(language, "default")
 }
 
 /// 设置语言默认版本
-pub(crate) fn set_default_version(language: &str, version: &str) -> Result<()> {
+pub fn set_default_version(language: &str, version: &str) -> Result<()> {
     set_alias(language, "default", version)
 }
 
 /// 删除指定别名
-pub(crate) fn remove_alias(language: &str, name: &str) -> Result<()> {
+pub fn remove_alias(language: &str, name: &str) -> Result<()> {
     validate_path_component("alias name", name)?;
     let path = aliases_dir(language)?.join(name);
     if !path.exists() {
@@ -236,7 +236,7 @@ pub(crate) fn remove_alias(language: &str, name: &str) -> Result<()> {
 // ─── .lvmrc 配置 ───
 
 /// 从当前目录向上遍历查找 .lvmrc 文件
-pub(crate) fn find_lvmrc() -> Option<PathBuf> {
+pub fn find_lvmrc() -> Option<PathBuf> {
     let mut dir = std::env::current_dir().ok()?;
     for _ in 0..max_lvmrc_depth() {
         let candidate = dir.join(lvmrc_filename());
@@ -256,7 +256,7 @@ pub(crate) fn find_lvmrc() -> Option<PathBuf> {
 ///   go=1.22.3
 ///   # 注释行
 ///   空行忽略
-pub(crate) fn parse_lvmrc(path: &Path) -> Result<HashMap<String, String>> {
+pub fn parse_lvmrc(path: &Path) -> Result<HashMap<String, String>> {
     let text = fs::read_to_string(path).context("Failed to read .lvmrc")?;
     let mut map = HashMap::new();
     for (lineno, line) in text.lines().enumerate() {
@@ -278,7 +278,7 @@ pub(crate) fn parse_lvmrc(path: &Path) -> Result<HashMap<String, String>> {
 }
 
 /// 读取 .lvmrc 中指定语言的版本
-pub(crate) fn read_lvmrc_version(language: &str) -> Result<Option<String>> {
+pub fn read_lvmrc_version(language: &str) -> Result<Option<String>> {
     let Some(path) = find_lvmrc() else {
         return Ok(None);
     };
@@ -289,7 +289,7 @@ pub(crate) fn read_lvmrc_version(language: &str) -> Result<Option<String>> {
 /// 写入或更新 .lvmrc 中指定语言的版本
 /// 保留注释、空行和已有条目顺序
 /// 如果 .lvmrc 不存在，则在当前目录创建
-pub(crate) fn write_lvmrc(language: &str, version: &str) -> Result<()> {
+pub fn write_lvmrc(language: &str, version: &str) -> Result<()> {
     let path = match find_lvmrc() {
         Some(p) => p,
         None => std::env::current_dir()
@@ -334,28 +334,28 @@ pub(crate) fn write_lvmrc(language: &str, version: &str) -> Result<()> {
 // ─── 显示和格式化常量配置 ───
 
 /// 检测 stdout 是否支持颜色输出
-pub(crate) fn use_color() -> bool {
+pub fn use_color() -> bool {
     use std::io::IsTerminal;
     std::io::stdout().is_terminal()
 }
 
 /// 绿色加粗 ANSI 代码（用于强调当前版本）
-pub(crate) fn color_green_bold() -> &'static str {
+pub fn color_green_bold() -> &'static str {
     "\x1b[1;32m"
 }
 
 /// 黄色 ANSI 代码（用于备选版本）
-pub(crate) fn color_yellow() -> &'static str {
+pub fn color_yellow() -> &'static str {
     "\x1b[33m"
 }
 
 /// 绿色 ANSI 代码（用于已安装版本）
-pub(crate) fn color_green() -> &'static str {
+pub fn color_green() -> &'static str {
     "\x1b[32m"
 }
 
 /// 青色 ANSI 代码（用于 LTS 版本）
-pub(crate) fn color_cyan() -> &'static str {
+pub fn color_cyan() -> &'static str {
     "\x1b[36m"
 }
 
@@ -365,22 +365,22 @@ fn color_bold() -> &'static str {
 }
 
 /// 重置 ANSI 代码
-pub(crate) fn color_reset() -> &'static str {
+pub fn color_reset() -> &'static str {
     "\x1b[0m"
 }
 
 /// LTS 版本标记（在版本列表中）
-pub(crate) fn lts_marker() -> &'static str {
+pub fn lts_marker() -> &'static str {
     "(LTS:"
 }
 
 /// 勾号符号 ✓（表示已安装）
-pub(crate) fn installed_check_mark() -> &'static str {
+pub fn installed_check_mark() -> &'static str {
     "\u{2713}"
 }
 
 /// 带颜色的勾号（粗体）
-pub(crate) fn colored_check_mark() -> String {
+pub fn colored_check_mark() -> String {
     format!(
         "{}{}{}",
         color_bold(),
