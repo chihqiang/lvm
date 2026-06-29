@@ -7,7 +7,7 @@ use std::fs;
 use super::Language;
 use crate::language;
 
-pub(crate) use config::go_packages_bin_path;
+pub(crate) use config::{go_mirror, go_packages_bin_path};
 
 pub struct GoLanguage;
 
@@ -25,6 +25,7 @@ impl Language for GoLanguage {
             if v == "system" {
                 bail!("'system' is not supported for Go");
             }
+            let v = v.trim_start_matches('v');
             if let Ok(ver) = semver::Version::parse(v) {
                 ver.to_string()
             } else {
@@ -44,29 +45,59 @@ impl Language for GoLanguage {
             return Ok(resolved);
         }
 
-        let tar_path = Self::cached_tar(&resolved);
-
-        let verify_go_checksum = |tar_path: &std::path::Path| -> Result<()> {
-            let filename = tar_path
-                .file_name()
-                .context(format!("Invalid tar path: {}", tar_path.display()))?
-                .to_string_lossy();
-            let expected = Self::fetch_file_sha256(&resolved, filename.as_ref())?;
-            language::report("Verifying checksum...");
-            language::verify_sha256(tar_path, &expected)?;
-            language::report("Checksum verified");
-            Ok(())
+        let os = config::target_os();
+        let ext = language::archive_ext();
+        let archs: &[&str] = if config::target_arch() != "amd64" {
+            &[config::target_arch(), "amd64"]
+        } else {
+            &[config::target_arch()]
         };
 
-        language::download_and_install(
-            &Self::download_url(&resolved),
-            &tar_path,
-            &resolved,
-            &version_dir,
-            "Go",
-            verify_go_checksum,
-        )?;
-        Ok(resolved)
+        for (i, &arch) in archs.iter().enumerate() {
+            if i > 0 && self.is_installed(&version_dir) {
+                return Ok(resolved);
+            }
+
+            let url = config::download_url(go_mirror(), &resolved, os, arch, ext);
+            let tar_path = crate::config::downloads_dir_or_default()
+                .join(config::tarball_filename(&resolved, os, arch, ext));
+
+            let verify_go_checksum = |tar_path: &std::path::Path| -> Result<()> {
+                let filename = tar_path
+                    .file_name()
+                    .context(format!("Invalid tar path: {}", tar_path.display()))?
+                    .to_string_lossy();
+                let expected = Self::fetch_file_sha256(&resolved, filename.as_ref())?;
+                language::report("Verifying checksum...");
+                language::verify_sha256(tar_path, &expected)?;
+                language::report("Checksum verified");
+                Ok(())
+            };
+
+            if arch != config::target_arch() {
+                language::report(format!("Using {os}-{arch} (non-native arch)"));
+            }
+
+            match language::download_and_install(
+                &url,
+                &tar_path,
+                &resolved,
+                &version_dir,
+                "Go",
+                verify_go_checksum,
+            ) {
+                Ok(()) => return Ok(resolved),
+                Err(_e) if i + 1 < archs.len() => {
+                    language::report(format!(
+                        "Download failed for {arch}, falling back to {next}",
+                        next = archs[i + 1]
+                    ));
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        bail!("Failed to install Go {resolved}")
     }
 
     fn post_switch(&self, version: &str) -> Result<()> {

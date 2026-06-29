@@ -4,7 +4,9 @@
 #![allow(clippy::multiple_crate_versions)]
 
 mod commands;
-mod config;
+mod core;
+
+pub(crate) use crate::core::config;
 
 use anyhow::Result;
 
@@ -21,6 +23,7 @@ fn run() -> Result<()> {
     let mut registry = language::LanguageRegistry::new();
     registry.register(Box::new(language::node::NodeLanguage));
     registry.register(Box::new(language::go::GoLanguage));
+    registry.register(Box::new(language::java::JavaLanguage));
 
     let mut cmd = commands::cli::build_cli();
     let cli = cmd.get_matches_mut();

@@ -3,9 +3,9 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::config;
-use crate::language::extract;
-use crate::language::http::{get_url, is_offline};
-use crate::language::report::{flush_reports_to_stdout, report};
+use crate::core::extract;
+use crate::core::http::{get_url, is_offline};
+use crate::core::report::{flush_reports_to_stdout, report};
 use anyhow::{Context, Result, bail};
 
 fn install_temp_dir(version_dir: &Path) -> Result<std::path::PathBuf> {
@@ -28,6 +28,40 @@ fn cleanup_install_dir(path: &Path) {
     }
 }
 
+fn ensure_downloaded(
+    dl_url: &str,
+    tar_path: &Path,
+    display_name: &str,
+    version: &str,
+    verify: impl Fn(&Path) -> Result<()>,
+) -> Result<()> {
+    if is_offline() {
+        if tar_path.exists() {
+            return Ok(());
+        }
+        bail!("Offline mode: no cached file at {}", tar_path.display())
+    }
+
+    if tar_path.exists() {
+        if verify(tar_path).is_ok() {
+            return Ok(());
+        }
+        report(format!(
+            "Verification failed, re-downloading {display_name} {version}"
+        ));
+        fs::remove_file(tar_path)?;
+    }
+
+    fs::create_dir_all(tar_path.parent().context("Invalid tar path")?)
+        .context("Failed to create download cache directory")?;
+    report(format!("Downloading {display_name} {version}"));
+    report(format!("  from: {dl_url}"));
+    report(format!("  to:   {}", tar_path.display()));
+    flush_reports_to_stdout();
+    download(dl_url, tar_path, true)?;
+    verify(tar_path)
+}
+
 pub(crate) fn download_and_install(
     dl_url: &str,
     tar_path: &Path,
@@ -36,27 +70,7 @@ pub(crate) fn download_and_install(
     display_name: &str,
     verify: impl Fn(&Path) -> Result<()>,
 ) -> Result<()> {
-    if !tar_path.exists() {
-        fs::create_dir_all(tar_path.parent().context("Invalid tar path")?)
-            .context("Failed to create download cache directory")?;
-        report(format!("Downloading {display_name} {version}"));
-        report(format!("  from: {dl_url}"));
-        report(format!("  to:   {}", tar_path.display()));
-        flush_reports_to_stdout();
-        download(dl_url, tar_path, true)?;
-    }
-    if !is_offline()
-        && let Err(e) = verify(tar_path)
-    {
-        report(format!(
-            "Verification failed ({e}), re-downloading {display_name} {version}"
-        ));
-        if tar_path.exists() {
-            fs::remove_file(tar_path)?;
-        }
-        download(dl_url, tar_path, true)?;
-        verify(tar_path)?;
-    }
+    ensure_downloaded(dl_url, tar_path, display_name, version, verify)?;
 
     let temp_dir = install_temp_dir(version_dir)?;
     cleanup_install_dir(&temp_dir);
@@ -131,7 +145,8 @@ pub(crate) fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()
     let resp = req.call().context("Download request failed")?;
     let status = resp.status();
     if status != 200 && status != 206 {
-        bail!("Download failed (HTTP {status})")
+        let body = resp.into_string().unwrap_or_default();
+        bail!("Download failed (HTTP {status}): {body}")
     }
     let is_resume = status == 206;
 
@@ -214,7 +229,11 @@ pub(crate) fn fetch_with_cache(
 }
 
 pub(crate) fn fetch_from_mirror(mirror_url: &str, url_path: &str) -> Result<String> {
-    let url = format!("{mirror_url}/{url_path}");
+    let url = format!(
+        "{}/{}",
+        mirror_url.trim_end_matches('/'),
+        url_path.trim_start_matches('/')
+    );
     let response = get_url(&url)
         .call()
         .context("Failed to fetch data from mirror")?;

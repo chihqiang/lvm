@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::config;
-use crate::language::report::report;
+use crate::core::report::report;
 use anyhow::{Context, Result, bail};
 
 pub(crate) fn create_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {

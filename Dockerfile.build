@@ -1,0 +1,46 @@
+# Build stage: compile lvm from source
+# Pinned to Debian bookworm to match the runtime stage's glibc (2.36) —
+# avoids "version GLIBC_2.xx not found" errors at runtime.
+FROM rust:bookworm AS builder
+
+WORKDIR /app
+
+# Copy entire project source into the builder container
+COPY . .
+
+# Compile a fully optimized release binary
+RUN cargo build --release
+
+# ========================== Runtime Stage ==========================
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y ca-certificates jq libterm-readline-perl-perl curl sudo wget zsh \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled binary from the builder stage — this is the only artifact we keep
+COPY --from=builder /app/target/release/lvm /usr/local/bin/lvm
+
+# Pre-install Node.js 20 and the latest stable Go via lvm itself
+RUN lvm install node 20 \
+    && lvm install go
+
+# Configure zsh to load lvm environment and auto-switch hook on startup
+RUN cat <<'EOF' >> ~/.zshrc
+eval "$(lvm env)"
+eval "$(lvm hook)"
+EOF
+
+# Configure bash for bash interactive shell compatibility
+RUN cat <<'EOF' >> ~/.bashrc
+eval "$(lvm env)"
+eval "$(lvm hook)"
+EOF
+
+# ---------------------- Build & Run Command Reference ----------------------
+# Build image command: docker build -f Dockerfile.build -t lvm:build .
+# Launch interactive zsh shell container (recommended): docker run -it --name lvm --rm lvm:build zsh
+# Launch interactive bash shell container: docker run -it --name lvm --rm lvm:build bash
+# Append zsh/bash after image tag to override default entrypoint and drop into interactive terminal
+# Default container entrypoint: Print installed LVM manager version
+CMD ["/usr/local/bin/lvm", "--version"]

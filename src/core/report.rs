@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::sync::{Mutex, OnceLock};
 
 static REPORT_BUF: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
@@ -22,7 +23,9 @@ pub(crate) fn drain_reports() -> Vec<String> {
 }
 
 pub(crate) fn flush_reports_to_stdout() {
+    let mut stdout = std::io::stdout().lock();
     for msg in drain_reports() {
-        println!("{msg}");
+        let _ = writeln!(stdout, "{msg}");
     }
+    let _ = stdout.flush();
 }

@@ -15,7 +15,12 @@ pub(crate) fn use_version(
     let version = match version {
         Some(v) => v.to_string(),
         None => {
-            if let Some(v) = config::read_lvmrc_version(language)? {
+            if language == "node"
+                && let Some(v) = crate::language::node::read_nvmrc()?
+                && !v.is_empty()
+            {
+                v
+            } else if let Some(v) = config::read_lvmrc_version(language)? {
                 v
             } else if let Some(v) = config::get_default_version(language)? {
                 v

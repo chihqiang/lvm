@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::language::report::report;
+use crate::core::report::report;
 use anyhow::{Context, Result, bail};
 
 fn strip_top_level(path: &Path) -> Result<PathBuf> {

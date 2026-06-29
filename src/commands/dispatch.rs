@@ -54,15 +54,20 @@ pub(crate) fn resolve_install_args(
         (Some(lang), None) => Ok(vec![(lang.to_string(), None)]),
         (Some(lang), Some(ver)) => Ok(vec![(lang.to_string(), Some(ver.to_string()))]),
         (None, _) => {
-            let path = config::find_lvmrc().context(
-                "No .lvmrc file found. Create one with language=version entries or specify arguments",
-            )?;
-            let map = config::parse_lvmrc(&path)?;
-            let vec: Vec<_> = map.into_iter().map(|(k, v)| (k, Some(v))).collect();
-            if vec.is_empty() {
-                bail!(".lvmrc exists but contains no language-version mappings");
+            if let Some(path) = config::find_lvmrc() {
+                let map = config::parse_lvmrc(&path)?;
+                let vec: Vec<_> = map.into_iter().map(|(k, v)| (k, Some(v))).collect();
+                if vec.is_empty() {
+                    bail!(".lvmrc exists but contains no language-version mappings");
+                }
+                return Ok(vec);
             }
-            Ok(vec)
+            if let Some(ver) = crate::language::node::read_nvmrc()?
+                && !ver.is_empty()
+            {
+                return Ok(vec![("node".to_string(), Some(ver))]);
+            }
+            bail!("No .lvmrc or .nvmrc found. Create one or specify arguments")
         }
     }
 }

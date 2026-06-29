@@ -2,9 +2,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config;
-use crate::language::fslink;
-use crate::language::report::report;
-use crate::language::version::compare_versions;
+use crate::core::fslink;
+use crate::core::report::report;
+use crate::core::version::compare_versions;
 use anyhow::{Context, Result, bail};
 
 pub trait Language {
