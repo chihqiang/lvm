@@ -41,6 +41,12 @@ impl Language for NodeLanguage {
         let os = config::target_os();
         let ext = language::archive_ext();
 
+        let checksums: HashMap<String, String> = if !source_is_url {
+            fetch_checksums(node_mirror(), &resolved_version)?
+        } else {
+            HashMap::new()
+        };
+
         for (i, &arch) in archs.iter().enumerate() {
             if i > 0 && self.is_installed(&version_dir) {
                 return Ok(resolved_version);
@@ -69,15 +75,15 @@ impl Language for NodeLanguage {
                     .file_name()
                     .context(format!("Invalid tar path: {}", tar_path.display()))?
                     .to_string_lossy();
-                let checksums = fetch_checksums(node_mirror(), &resolved_version)?;
+                if source_is_url {
+                    bail!(
+                        "No checksum entry for '{tarball_filename}'; custom Node URL cannot be verified"
+                    );
+                }
                 if let Some(expected) = checksums.get(tarball_filename.as_ref()) {
                     language::report("Verifying checksum...");
                     language::verify_sha256(tar_path, expected)?;
                     language::report("Checksum verified");
-                } else if source_is_url {
-                    bail!(
-                        "No checksum entry for '{tarball_filename}'; custom Node URL cannot be verified"
-                    );
                 } else {
                     language::report(format!(
                         "Warning: no checksum entry for '{tarball_filename}', verification skipped"
@@ -85,6 +91,10 @@ impl Language for NodeLanguage {
                 }
                 Ok(())
             };
+
+            if arch != config::target_arch() {
+                language::report(format!("Using {os}-{arch} (Rosetta/emulation)"));
+            }
 
             match language::download_and_install(
                 &url, &tar, &resolved_version, &version_dir, "Node", verify,

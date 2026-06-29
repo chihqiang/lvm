@@ -65,7 +65,7 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
     match version {
         None => version::fetch_latest_lts_version(),
         Some(v) => {
-            let v = v.trim();
+            let v = v.trim().trim_start_matches('v');
             if v == "system" {
                 bail!("Use 'lvm use system' instead of 'lvm install system'");
             }

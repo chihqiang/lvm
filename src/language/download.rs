@@ -145,7 +145,8 @@ pub(crate) fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()
     let resp = req.call().context("Download request failed")?;
     let status = resp.status();
     if status != 200 && status != 206 {
-        bail!("Download failed (HTTP {status})")
+        let body = resp.into_string().unwrap_or_default();
+        bail!("Download failed (HTTP {status}): {body}")
     }
     let is_resume = status == 206;
 
@@ -228,7 +229,7 @@ pub(crate) fn fetch_with_cache(
 }
 
 pub(crate) fn fetch_from_mirror(mirror_url: &str, url_path: &str) -> Result<String> {
-    let url = format!("{mirror_url}/{url_path}");
+    let url = format!("{}/{}", mirror_url.trim_end_matches('/'), url_path.trim_start_matches('/'));
     let response = get_url(&url)
         .call()
         .context("Failed to fetch data from mirror")?;

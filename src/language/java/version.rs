@@ -23,9 +23,7 @@ pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
         Ok(all_versions.join("\n"))
     })?;
 
-    let mut versions: Vec<String> = text.lines().map(String::from).collect();
-    language::sort_versions(&mut versions);
-    versions.dedup();
+    let versions: Vec<String> = text.lines().map(String::from).collect();
     Ok(versions)
 }
 

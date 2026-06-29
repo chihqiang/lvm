@@ -25,6 +25,7 @@ impl Language for GoLanguage {
             if v == "system" {
                 bail!("'system' is not supported for Go");
             }
+            let v = v.trim_start_matches('v');
             if let Ok(ver) = semver::Version::parse(v) {
                 ver.to_string()
             } else {
