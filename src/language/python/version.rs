@@ -24,20 +24,13 @@ fn version_from_string(s: &str) -> Option<Version> {
         s.to_string()
     };
     let ver = Version::parse(&semver_str).ok()?;
-    if ver.pre.is_empty() {
-        Some(ver)
-    } else {
-        None
-    }
+    if ver.pre.is_empty() { Some(ver) } else { None }
 }
 
 impl super::PythonLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
         let versions = Self::fetch_all_versions()?;
-        versions
-            .last()
-            .cloned()
-            .context("No Python versions found")
+        versions.last().cloned().context("No Python versions found")
     }
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {

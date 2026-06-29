@@ -6,9 +6,7 @@ use std::sync::OnceLock;
 static PYTHON_TAG: OnceLock<String> = OnceLock::new();
 
 fn python_tag() -> &'static str {
-    PYTHON_TAG.get_or_init(|| {
-        env::var("LVM_PYTHON_TAG").unwrap_or_else(|_| "20260623".to_string())
-    })
+    PYTHON_TAG.get_or_init(|| env::var("LVM_PYTHON_TAG").unwrap_or_else(|_| "20260623".to_string()))
 }
 
 // Base download URL. Override via LVM_PYTHON_MIRROR env var.
