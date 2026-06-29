@@ -4,7 +4,7 @@ use serde_json::Value;
 use crate::config;
 use crate::language;
 
-use super::config::{java_mirror, target_arch, target_os, java_versions_cache_filename};
+use super::config::{java_mirror, java_versions_cache_filename, target_arch, target_os};
 
 pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
     let cache_file = config::cache_dir()
@@ -53,9 +53,7 @@ pub(crate) fn fetch_download_info(version: &str) -> Result<(String, String, Stri
         .parse()
         .context("Invalid version")?;
 
-    let path = format!(
-        "/assets/feature_releases/{major}/ga?page=0&page_size=10&sort_order=DESC"
-    );
+    let path = format!("/assets/feature_releases/{major}/ga?page=0&page_size=10&sort_order=DESC");
     let text = adoptium_get(&path)?;
     let releases: Vec<Value> = serde_json::from_str(&text)?;
 
@@ -113,9 +111,7 @@ fn adoptium_get(path: &str) -> Result<String> {
     let response = language::get_url(&url)
         .call()
         .context("Failed to fetch Java data")?;
-    response
-        .into_string()
-        .context("Failed to read response")
+    response.into_string().context("Failed to read response")
 }
 
 fn fetch_available_majors() -> Result<Vec<i32>> {
@@ -132,9 +128,8 @@ fn fetch_available_majors() -> Result<Vec<i32>> {
 }
 
 fn fetch_major_versions(major: i32, limit: i32) -> Result<Vec<String>> {
-    let path = format!(
-        "/assets/feature_releases/{major}/ga?page=0&page_size={limit}&sort_order=DESC"
-    );
+    let path =
+        format!("/assets/feature_releases/{major}/ga?page=0&page_size={limit}&sort_order=DESC");
     let text = adoptium_get(&path)?;
     let releases: Vec<Value> = serde_json::from_str(&text)?;
     Ok(releases

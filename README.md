@@ -30,7 +30,7 @@ eval "$(lvm env)"
 eval "$(lvm hook)"
 ```
 
-`lvm env` sets up PATH and GOPATH, and `lvm hook` enables automatic version switching when entering a directory (when the directory contains a `.lvmrc` file).
+`lvm env` sets up PATH and GOPATH, and `lvm hook` enables automatic version switching when entering a directory (when the directory contains `.lvmrc` or `.nvmrc` files).
 
 ## Quick Start
 
@@ -52,7 +52,7 @@ lvm list node
 
 # Switch version
 lvm use node 22
-lvm use node                  # Without version: .lvmrc → default alias → latest
+lvm use node                  # Without version: .nvmrc → .lvmrc → default alias → latest
 
 # Switch and write .lvmrc (project-level lock)
 lvm use node 22 --save
@@ -86,9 +86,9 @@ lvm current go
 
 | Command | Description |
 |---------|-------------|
-| `lvm install [language] [version]` | Install a version. Omit both to install all from `.lvmrc`, or show help if no `.lvmrc` exists. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
+| `lvm install [language] [version]` | Install a version. Without arguments, installs all from `.lvmrc`; falls back to `.nvmrc` if no `.lvmrc`. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | Uninstall a version |
-| `lvm use [language] [version]` | Switch to a version. Without version, resolves via `.lvmrc` → default alias → latest. Supports `--save`, `--no-default` |
+| `lvm use [language] [version]` | Switch to a version. Without version for Node, resolves via `.nvmrc` → `.lvmrc` → default alias → latest. Supports `--save`, `--no-default` |
 | `lvm list <language>` | List installed versions (marks current/default) |
 | `lvm list-remote <language>` | List installable versions. Supports `--lts` to filter LTS only |
 | `lvm current [language]` | Show the active version. Without language, shows all languages |
@@ -120,7 +120,7 @@ lvm current go
 
 ## Configuration
 
-### `.lvmrc` — Project-level version lock
+### Project-level version lock
 
 Create a `.lvmrc` file in your project root with the format `language=version`:
 
@@ -131,9 +131,11 @@ go=1.22.3
 
 Supports `#` comments and blank lines. Multiple languages can be specified in the same file.
 
+**`.nvmrc` compatibility**: lvm also reads `.nvmrc` files. When using `lvm use node` (without specifying a version), `.nvmrc` is checked before `.lvmrc`. This ensures seamless migration from nvm/fnm — just keep your existing `.nvmrc` files.
+
 Run `lvm install` without arguments to install all versions declared in `.lvmrc` at once.
 
-lvm automatically switches all declared versions when entering the directory (requires `eval "$(lvm hook)"` in your shell config).
+lvm automatically switches all declared versions when entering the directory (requires `eval "$(lvm hook)"` in your shell config). `.nvmrc`-only projects are also supported for automatic switching.
 
 Use `--save` / `-w` to automatically write `.lvmrc` after install or switch:
 
@@ -182,7 +184,7 @@ eslint
 - **Per-version isolation**: Packages for each version are fully isolated. `go install` goes to `$GOPATH/bin` (points to current version), `npm install -g` installs to the version directory — no sharing between versions
 - **Symlink switching**: Lossless, atomic version switching
 - **Offline mode**: `--offline` uses cache only
-- **Shell auto-switch**: `lvm hook` outputs hook scripts for bash/zsh/fish/powershell that auto-switch versions when entering directories with `.lvmrc`
+- **Shell auto-switch**: `lvm hook` outputs hook scripts for bash/zsh/fish/powershell that auto-switch versions when entering directories with `.lvmrc` or `.nvmrc`
 
 ### Mirror Configuration
 
@@ -200,11 +202,11 @@ Add the following to your shell configuration (`~/.bashrc` or `~/.zshrc`):
 
 ```bash
 eval "$(lvm env)"    # PATH + GOPATH setup
-eval "$(lvm hook)"   # .lvmrc auto-switch hook
+eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 ```
 
 - **`lvm env`**: Outputs `LVM_HOME`, `GOPATH`, `PATH` environment variables. Windows outputs cmd.exe syntax.
-- **`lvm hook`**: Outputs auto-switch script. Defaults to detecting the current shell; use `--shell` to override. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook, fish uses `--on-variable PWD`, powershell overrides the `prompt` function — automatically runs `lvm use` when entering a directory containing `.lvmrc`. Not available on Windows (unless `--shell powershell` is explicitly given).
+- **`lvm hook`**: Outputs auto-switch script. Defaults to detecting the current shell; use `--shell` to override. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook, fish uses `--on-variable PWD`, powershell overrides the `prompt` function — automatically runs `lvm use` when entering a directory containing `.lvmrc` or `.nvmrc`. Not available on Windows (unless `--shell powershell` is explicitly given).
 - **`lvm env --shell bash|zsh|fish`**: Outputs command completion scripts.
 - **Node.js**: npm global packages are installed to the corresponding version directory; not shared after switching versions.
 - **Go**: `GOPATH` is automatically set to `$LVM_HOME/current/go/packages` (symlink dynamically points to the current version). Binaries installed via `go install` are isolated from the system and other versions.
@@ -249,4 +251,4 @@ eval "$(lvm hook)"   # .lvmrc auto-switch hook
 | SHA256 checksum | ✗ | ✗ | ✗ | ✓ |
 | Offline mode | ✗ | ✗ | ✗ | ✓ |
 | Auto-switch | ✗ | ✗ | ✗ | ✓ Built-in hook |
-| Project-level lock | .nvmrc | .node-version | ✗ | .lvmrc |
+| Project-level lock | .nvmrc | .node-version | ✗ | .lvmrc + .nvmrc |

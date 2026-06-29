@@ -79,7 +79,12 @@ impl Language for GoLanguage {
             }
 
             match language::download_and_install(
-                &url, &tar_path, &resolved, &version_dir, "Go", verify_go_checksum,
+                &url,
+                &tar_path,
+                &resolved,
+                &version_dir,
+                "Go",
+                verify_go_checksum,
             ) {
                 Ok(()) => return Ok(resolved),
                 Err(_e) if i + 1 < archs.len() => {

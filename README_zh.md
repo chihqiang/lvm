@@ -29,7 +29,7 @@ eval "$(lvm env)"
 eval "$(lvm hook)"
 ```
 
-`lvm env` 设置 PATH 和 GOPATH，`lvm hook` 启用进入目录时自动切换版本（当目录包含 `.lvmrc` 时）。
+`lvm env` 设置 PATH 和 GOPATH，`lvm hook` 启用进入目录时自动切换版本（当目录包含 `.lvmrc` 或 `.nvmrc` 时）。
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ lvm list node
 
 # 切换使用版本
 lvm use node 22
-lvm use node                  # 不指定版本：.lvmrc → 默认别名 → 最新版
+lvm use node                  # 不指定版本：.nvmrc → .lvmrc → 默认别名 → 最新版
 
 # 切换后同时写入 .lvmrc（项目级锁定）
 lvm use node 22 --save
@@ -85,9 +85,9 @@ lvm current go
 
 | Command | Description |
 |---------|-------------|
-| `lvm install [language] [version]` | 安装指定版本。省略参数则安装 `.lvmrc` 中所有语言，不存在 `.lvmrc` 时显示帮助。支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
+| `lvm install [language] [version]` | 安装指定版本。省略参数则安装 `.lvmrc` 中所有语言，无 `.lvmrc` 时回退到 `.nvmrc`。支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | 卸载已安装版本 |
-| `lvm use [language] [version]` | 切换当前版本，不指定 version 时自动按 `.lvmrc` → 默认别名 → 最新版查找。支持 `--save`、`--no-default` |
+| `lvm use [language] [version]` | 切换当前版本，Node 不指定 version 时按 `.nvmrc` → `.lvmrc` → 默认别名 → 最新版查找。支持 `--save`、`--no-default` |
 | `lvm list <language>` | 列出已安装版本（标记 current/default） |
 | `lvm list-remote <language>` | 列出可安装版本，支持 `--lts` 过滤仅 LTS |
 | `lvm current [language]` | 显示当前使用版本，不指定 language 显示所有语言 |
@@ -119,7 +119,7 @@ lvm current go
 
 ## Configuration
 
-### `.lvmrc` — 项目级版本锁定
+### `.lvmrc` / `.nvmrc` — 项目级版本锁定
 
 在项目根目录创建 `.lvmrc`，按 `language=version` 格式写入：
 
@@ -130,9 +130,11 @@ go=1.22.3
 
 支持 `#` 注释和空行。多语言可写在同一文件中。
 
+**`.nvmrc` 兼容**：lvm 也会读取 `.nvmrc` 文件。执行 `lvm use node`（不指定版本）时，`.nvmrc` 优先级高于 `.lvmrc`。这意味着从 nvm/fnm 迁移无需额外配置——保留你的 `.nvmrc` 即可。
+
 执行 `lvm install`（不传参数）会一次安装 `.lvmrc` 中声明的所有版本。
 
-lvm 进入该目录时（需在 shell 配置中 `eval "$(lvm hook)"`）自动切换所有声明的版本。
+lvm 进入该目录时（需在 shell 配置中 `eval "$(lvm hook)"`）自动切换所有声明的版本。仅含 `.nvmrc` 的项目也同样支持自动切换。
 
 使用 `--save` / `-w` 可在安装或切换后自动写入：
 
@@ -181,7 +183,7 @@ eslint
 - **Per-version 隔离**：每个版本的包完全隔离。`go install` 安装到 `$GOPATH/bin`（指向当前版本），`npm install -g` 安装到版本目录，切换版本后不共享
 - **符号链接切换**：无损、原子化的版本切换
 - **离线模式**：`--offline` 仅使用缓存
-- **Shell 自动切换**：`lvm hook` 输出 bash/zsh/fish/powershell hook 脚本，进入含 `.lvmrc` 的目录时自动切换版本
+- **Shell 自动切换**：`lvm hook` 输出 bash/zsh/fish/powershell hook 脚本，进入含 `.lvmrc` 或 `.nvmrc` 的目录时自动切换版本
 
 ### 镜像源配置
 
@@ -199,11 +201,11 @@ export LVM_GO_MIRROR=https://mirrors.aliyun.com/golang/
 
 ```bash
 eval "$(lvm env)"    # PATH + GOPATH 设置
-eval "$(lvm hook)"   # .lvmrc 自动切换 hook
+eval "$(lvm hook)"   # .lvmrc / .nvmrc 自动切换 hook
 ```
 
 - **`lvm env`**：输出 `LVM_HOME`、`GOPATH`、`PATH` 环境变量。Windows 输出 cmd.exe 语法。
-- **`lvm hook`**：输出自动切换脚本。默认自动检测当前 shell，可用 `--shell` 指定。bash 通过 `PROMPT_COMMAND`，zsh 通过 `chpwd` 钩子，fish 使用 `--on-variable PWD`，powershell 覆写 `prompt` 函数，进入含 `.lvmrc` 的目录时自动执行 `lvm use`。Windows 上不可用（除非显式 `--shell powershell`）。
+- **`lvm hook`**：输出自动切换脚本。默认自动检测当前 shell，可用 `--shell` 指定。bash 通过 `PROMPT_COMMAND`，zsh 通过 `chpwd` 钩子，fish 使用 `--on-variable PWD`，powershell 覆写 `prompt` 函数，进入含 `.lvmrc` 或 `.nvmrc` 的目录时自动执行 `lvm use`。Windows 上不可用（除非显式 `--shell powershell`）。
 - **`lvm env --shell bash|zsh|fish`**：输出命令补全脚本。
 - **Node.js**：npm 全局包安装到对应版本目录，切换版本后不共享。
 - **Go**：`GOPATH` 自动设为 `$LVM_HOME/current/go/packages`（符号链接动态指向当前版本），`go install` 安装的二进制与系统和其他版本隔离。
@@ -248,4 +250,4 @@ eval "$(lvm hook)"   # .lvmrc 自动切换 hook
 | SHA256 校验 | ✗ | ✗ | ✗ | ✓ |
 | 离线模式 | ✗ | ✗ | ✗ | ✓ |
 | 自动切换 | ✗ | ✗ | ✗ | ✓ 内置 hook |
-| 项目级锁定 | .nvmrc | .node-version | ✗ | .lvmrc |
+| 项目级锁定 | .nvmrc | .node-version | ✗ | .lvmrc + .nvmrc |

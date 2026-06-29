@@ -54,5 +54,3 @@ pub(crate) fn go_versions_cache_filename() -> &'static str {
 pub(crate) fn go_versions_query_suffix() -> &'static str {
     "/?mode=json&include=all"
 }
-
-

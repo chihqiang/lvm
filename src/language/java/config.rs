@@ -5,8 +5,7 @@ static JAVA_MIRROR: OnceLock<String> = OnceLock::new();
 
 pub(crate) fn java_mirror() -> &'static str {
     JAVA_MIRROR.get_or_init(|| {
-        env::var("LVM_JAVA_MIRROR")
-            .unwrap_or_else(|_| "https://api.adoptium.net/v3".to_string())
+        env::var("LVM_JAVA_MIRROR").unwrap_or_else(|_| "https://api.adoptium.net/v3".to_string())
     })
 }
 

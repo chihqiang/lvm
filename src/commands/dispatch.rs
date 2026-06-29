@@ -67,9 +67,7 @@ pub(crate) fn resolve_install_args(
             {
                 return Ok(vec![("node".to_string(), Some(ver))]);
             }
-            bail!(
-                "No .lvmrc or .nvmrc found. Create one or specify arguments"
-            )
+            bail!("No .lvmrc or .nvmrc found. Create one or specify arguments")
         }
     }
 }

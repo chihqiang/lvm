@@ -26,8 +26,7 @@ impl Language for JavaLanguage {
             return Ok(resolved);
         }
 
-        let (download_url, tarball_name, checksum_hex) =
-            version::fetch_download_info(&resolved)?;
+        let (download_url, tarball_name, checksum_hex) = version::fetch_download_info(&resolved)?;
         let tar_path = crate::config::downloads_dir_or_default().join(&tarball_name);
 
         let verify_java_checksum = |tar_path: &Path| -> Result<()> {

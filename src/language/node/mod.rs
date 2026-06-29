@@ -9,8 +9,8 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 
 use super::Language;
-use crate::language;
 use crate::core::http::get_url;
+use crate::language;
 
 pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
 pub(crate) use nvmrc::read_nvmrc;
@@ -45,7 +45,9 @@ impl Language for NodeLanguage {
 
         let checksums: HashMap<String, String> = if !source_is_url {
             fetch_checksums(node_mirror(), &resolved_version).unwrap_or_else(|e| {
-                language::report(format!("Warning: could not fetch checksums ({e}), verification skipped"));
+                language::report(format!(
+                    "Warning: could not fetch checksums ({e}), verification skipped"
+                ));
                 HashMap::new()
             })
         } else {
@@ -71,8 +73,12 @@ impl Language for NodeLanguage {
                     .unwrap_or("download.tar.gz");
                 crate::config::downloads_dir()?.join(filename)
             } else {
-                crate::config::downloads_dir_or_default()
-                    .join(config::tarball_filename(&resolved_version, os, arch, ext))
+                crate::config::downloads_dir_or_default().join(config::tarball_filename(
+                    &resolved_version,
+                    os,
+                    arch,
+                    ext,
+                ))
             };
 
             let verify = |tar_path: &Path| -> Result<()> {
@@ -102,7 +108,12 @@ impl Language for NodeLanguage {
             }
 
             match language::download_and_install(
-                &url, &tar, &resolved_version, &version_dir, "Node", verify,
+                &url,
+                &tar,
+                &resolved_version,
+                &version_dir,
+                "Node",
+                verify,
             ) {
                 Ok(()) => return Ok(resolved_version),
                 Err(_e) if i + 1 < archs.len() => {

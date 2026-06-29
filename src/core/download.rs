@@ -229,7 +229,11 @@ pub(crate) fn fetch_with_cache(
 }
 
 pub(crate) fn fetch_from_mirror(mirror_url: &str, url_path: &str) -> Result<String> {
-    let url = format!("{}/{}", mirror_url.trim_end_matches('/'), url_path.trim_start_matches('/'));
+    let url = format!(
+        "{}/{}",
+        mirror_url.trim_end_matches('/'),
+        url_path.trim_start_matches('/')
+    );
     let response = get_url(&url)
         .call()
         .context("Failed to fetch data from mirror")?;
