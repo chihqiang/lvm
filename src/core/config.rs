@@ -17,6 +17,11 @@ pub(crate) fn bin_dir_name() -> &'static str {
     "bin"
 }
 
+/// 当前版本软链接目录名 (~/.lvm/current/)
+pub(crate) fn current_dir_name() -> &'static str {
+    "current"
+}
+
 /// 别名配置目录名 (~/.lvm/aliases/)
 pub(crate) fn aliases_dir_name() -> &'static str {
     "aliases"

@@ -29,3 +29,23 @@ pub(crate) fn flush_reports_to_stdout() {
     }
     let _ = stdout.flush();
 }
+
+pub(crate) fn report_verifying_checksum() {
+    report("Verifying checksum...");
+}
+
+pub(crate) fn report_checksum_verified() {
+    report("Checksum verified");
+}
+
+pub(crate) fn report_already_installed(name: &str, version: &str) {
+    report(format!("{name} {version} is already installed"));
+}
+
+pub(crate) fn report_non_native_arch(os: &str, arch: &str) {
+    report(format!("Using {os}-{arch} (non-native arch)"));
+}
+
+pub(crate) fn report_fallback(from: &str, to: &str) {
+    report(format!("Failed for {from}, falling back to {to}"));
+}

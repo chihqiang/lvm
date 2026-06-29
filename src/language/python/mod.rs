@@ -22,7 +22,7 @@ impl Language for PythonLanguage {
         let resolved = resolve_version(version)?;
         let version_dir = self.version_dir(&resolved);
         if self.is_installed(&version_dir) {
-            language::report(format!("Python {resolved} is already installed"));
+            language::report_already_installed("Python", &resolved);
             return Ok(resolved);
         }
 
@@ -44,7 +44,7 @@ impl Language for PythonLanguage {
                 .join(config::tarball_filename(&resolved, os, arch, ext));
 
             if arch != config::target_arch() {
-                language::report(format!("Using {os}-{arch} (non-native arch)"));
+                language::report_non_native_arch(os, arch);
             }
 
             match language::download_and_install(
@@ -57,10 +57,7 @@ impl Language for PythonLanguage {
             ) {
                 Ok(()) => return Ok(resolved),
                 Err(_e) if i + 1 < archs.len() => {
-                    language::report(format!(
-                        "Download failed for {arch}, falling back to {next}",
-                        next = archs[i + 1]
-                    ));
+                    language::report_fallback(arch, archs[i + 1]);
                 }
                 Err(e) => return Err(e),
             }
@@ -71,12 +68,13 @@ impl Language for PythonLanguage {
 
     fn is_installed(&self, version_dir: &Path) -> bool {
         let exe = std::env::consts::EXE_SUFFIX;
+        let bin = crate::config::bin_dir_name();
         version_dir
-            .join("bin")
+            .join(bin)
             .join(format!("python3{exe}"))
             .exists()
             || version_dir
-                .join("bin")
+                .join(bin)
                 .join(format!("python{exe}"))
                 .exists()
     }

@@ -3,13 +3,13 @@ use anyhow::{Context, Result};
 use crate::config;
 use crate::language;
 
-use super::config::{dart_versions_cache_filename, dart_mirror};
+use super::config::{dart_latest_version_cache_filename, dart_versions_cache_filename, dart_mirror};
 
 impl super::DartLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
         let cache_file = config::cache_dir()
             .unwrap_or_else(|_| config::default_cache_dir())
-            .join("dart-latest-version.json");
+            .join(dart_latest_version_cache_filename());
 
         let text = language::fetch_with_cache(&cache_file, || {
             let url = format!("{}/channels/stable/release/latest/VERSION", dart_mirror());

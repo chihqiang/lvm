@@ -51,3 +51,7 @@ pub(crate) fn target_arch() -> &'static str {
 pub(crate) fn dart_versions_cache_filename() -> &'static str {
     "dart-versions.txt"
 }
+
+pub(crate) fn dart_latest_version_cache_filename() -> &'static str {
+    "dart-latest-version.json"
+}

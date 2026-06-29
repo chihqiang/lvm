@@ -19,7 +19,7 @@ impl Language for GoLanguage {
     fn install(&self, version: Option<&str>) -> Result<String> {
         let resolved = if let Some(v) = version {
             let v = v.trim();
-            if v.starts_with("lts/") {
+            if v.starts_with(crate::config::lts_prefix()) {
                 bail!("Go does not have LTS releases");
             }
             if v == crate::config::system_version_keyword() {
@@ -41,7 +41,7 @@ impl Language for GoLanguage {
 
         let version_dir = self.version_dir(&resolved);
         if self.is_installed(&version_dir) {
-            language::report(format!("Go {resolved} is already installed"));
+            language::report_already_installed("Go", &resolved);
             return Ok(resolved);
         }
 
@@ -68,14 +68,14 @@ impl Language for GoLanguage {
                     .context(format!("Invalid tar path: {}", tar_path.display()))?
                     .to_string_lossy();
                 let expected = Self::fetch_file_sha256(&resolved, filename.as_ref())?;
-                language::report("Verifying checksum...");
+                language::report_verifying_checksum();
                 language::verify_sha256(tar_path, &expected)?;
-                language::report("Checksum verified");
+                language::report_checksum_verified();
                 Ok(())
             };
 
             if arch != config::target_arch() {
-                language::report(format!("Using {os}-{arch} (non-native arch)"));
+                language::report_non_native_arch(os, arch);
             }
 
             match language::download_and_install(
@@ -88,10 +88,7 @@ impl Language for GoLanguage {
             ) {
                 Ok(()) => return Ok(resolved),
                 Err(_e) if i + 1 < archs.len() => {
-                    language::report(format!(
-                        "Download failed for {arch}, falling back to {next}",
-                        next = archs[i + 1]
-                    ));
+                    language::report_fallback(arch, archs[i + 1]);
                 }
                 Err(e) => return Err(e),
             }

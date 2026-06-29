@@ -43,7 +43,7 @@ pub trait Language {
     fn current_link(&self) -> PathBuf {
         config::lvm_home()
             .expect("LVM home directory is required")
-            .join("current")
+            .join(config::current_dir_name())
             .join(self.subdir_name())
     }
 
