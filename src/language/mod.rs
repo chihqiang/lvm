@@ -1,6 +1,7 @@
 pub mod go;
 pub mod java;
 pub mod node;
+pub mod python;
 
 mod language_trait;
 mod registry;
