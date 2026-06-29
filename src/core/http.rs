@@ -5,11 +5,11 @@ use crate::config;
 
 static OFFLINE: AtomicBool = AtomicBool::new(false);
 
-pub(crate) fn set_offline(offline: bool) {
+pub fn set_offline(offline: bool) {
     OFFLINE.store(offline, Ordering::Release);
 }
 
-pub(crate) fn is_offline() -> bool {
+pub fn is_offline() -> bool {
     OFFLINE.load(Ordering::Relaxed)
 }
 
@@ -24,7 +24,7 @@ pub(crate) fn http() -> &'static ureq::Agent {
     })
 }
 
-pub(crate) fn get_url(url: &str) -> ureq::Request {
+pub fn get_url(url: &str) -> ureq::Request {
     let ua = format!("lvm-http-client/{}", env!("CARGO_PKG_VERSION"));
     http().get(url).set("User-Agent", &ua)
 }

@@ -2,7 +2,7 @@ use semver::Version;
 
 use anyhow::{Result, anyhow, bail};
 
-pub(crate) fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
+pub fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
     let a_ver = Version::parse(a).ok();
     let b_ver = Version::parse(b).ok();
     match (a_ver, b_ver) {
@@ -13,15 +13,11 @@ pub(crate) fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
     }
 }
 
-pub(crate) fn sort_versions(versions: &mut [String]) {
+pub fn sort_versions(versions: &mut [String]) {
     versions.sort_by(|a, b| compare_versions(a, b));
 }
 
-pub(crate) fn resolve_partial_version(
-    candidate: &str,
-    avail: &[Version],
-    lang: &str,
-) -> Result<String> {
+pub fn resolve_partial_version(candidate: &str, avail: &[Version], lang: &str) -> Result<String> {
     let parts: Vec<&str> = candidate.split('.').collect();
     let want_major = parts.first().and_then(|s| s.parse::<u64>().ok());
     if want_major.is_none() {

@@ -5,7 +5,7 @@ use crate::config;
 use crate::core::report::report;
 use anyhow::{Context, Result, bail};
 
-pub(crate) fn create_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {
+pub fn create_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {
     #[cfg(unix)]
     return std::os::unix::fs::symlink(src, dst);
     #[cfg(windows)]
@@ -29,7 +29,7 @@ fn temp_symlink_path(dst: &Path) -> Result<std::path::PathBuf> {
     Ok(parent.join(format!(".{name}.tmp-{}", std::process::id())))
 }
 
-pub(crate) fn replace_symlink(src: &Path, dst: &Path) -> Result<()> {
+pub fn replace_symlink(src: &Path, dst: &Path) -> Result<()> {
     let tmp = temp_symlink_path(dst)?;
     if tmp.symlink_metadata().is_ok()
         && let Err(e) = remove_symlink(&tmp)
@@ -66,7 +66,7 @@ pub(crate) fn replace_symlink(src: &Path, dst: &Path) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn remove_symlink(path: &Path) -> std::io::Result<()> {
+pub fn remove_symlink(path: &Path) -> std::io::Result<()> {
     #[cfg(unix)]
     return fs::remove_file(path);
     #[cfg(windows)]
@@ -82,15 +82,15 @@ pub(crate) fn remove_symlink(path: &Path) -> std::io::Result<()> {
     compile_error!("unsupported platform");
 }
 
-pub(crate) fn exe_suffix() -> &'static str {
+pub fn exe_suffix() -> &'static str {
     std::env::consts::EXE_SUFFIX
 }
 
-pub(crate) fn path_separator() -> &'static str {
+pub fn path_separator() -> &'static str {
     if cfg!(windows) { ";" } else { ":" }
 }
 
-pub(crate) fn archive_ext() -> &'static str {
+pub fn archive_ext() -> &'static str {
     #[cfg(windows)]
     {
         "zip"
@@ -101,11 +101,11 @@ pub(crate) fn archive_ext() -> &'static str {
     }
 }
 
-pub(crate) const CURRENT_MARKER: &str = " (current)";
-pub(crate) const DEFAULT_MARKER: &str = " (default)";
-pub(crate) const CURRENT_DEFAULT_MARKER: &str = " (current, default)";
+pub const CURRENT_MARKER: &str = " (current)";
+pub const DEFAULT_MARKER: &str = " (default)";
+pub const CURRENT_DEFAULT_MARKER: &str = " (current, default)";
 
-pub(crate) fn format_installed_versions(
+pub fn format_installed_versions(
     prefix: &str,
     current: Option<&str>,
     default_ver: Option<&str>,
@@ -127,7 +127,7 @@ pub(crate) fn format_installed_versions(
         .collect()
 }
 
-pub(crate) fn uninstall_version(
+pub fn uninstall_version(
     version_dir: &Path,
     current_link: &Path,
     bin_link: &Path,
@@ -156,7 +156,7 @@ pub(crate) fn uninstall_version(
     Ok(())
 }
 
-pub(crate) fn use_version_symlinks(
+pub fn use_version_symlinks(
     version_dir: &Path,
     current_link: &Path,
     bin_link: &Path,
