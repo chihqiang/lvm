@@ -33,14 +33,14 @@ impl super::DartLanguage {
             .unwrap_or_else(|_| config::default_cache_dir())
             .join(dart_versions_cache_filename());
 
-        let text = language::fetch_with_cache(&cache_file, || Self::fetch_s3_listing())?;
+        let text = language::fetch_with_cache(&cache_file, Self::fetch_s3_listing)?;
 
         let mut versions: Vec<semver::Version> = Vec::new();
         for line in text.lines() {
-            if let Ok(ver) = semver::Version::parse(line) {
-                if ver.pre.is_empty() {
-                    versions.push(ver);
-                }
+            if let Ok(ver) = semver::Version::parse(line)
+                && ver.pre.is_empty()
+            {
+                versions.push(ver);
             }
         }
         versions.sort();
@@ -75,12 +75,10 @@ impl super::DartLanguage {
                 if let Some(ver_str) = key
                     .strip_prefix("channels/stable/release/")
                     .and_then(|s| s.split('/').next())
+                    && let Ok(ver) = semver::Version::parse(ver_str)
+                    && ver.pre.is_empty()
                 {
-                    if let Ok(ver) = semver::Version::parse(ver_str) {
-                        if ver.pre.is_empty() {
-                            all_versions.push(ver);
-                        }
-                    }
+                    all_versions.push(ver);
                 }
             }
 
