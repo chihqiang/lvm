@@ -32,7 +32,7 @@ impl Language for NodeLanguage {
 
         let archs: &[&str] = if source_is_url {
             &[config::target_arch()]
-        } else if cfg!(target_os = "macos") && std::env::consts::ARCH == "aarch64" {
+        } else if config::target_arch() != "x64" {
             &[config::target_arch(), "x64"]
         } else {
             &[config::target_arch()]

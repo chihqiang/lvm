@@ -65,8 +65,7 @@ pub(crate) fn fetch_download_info(version: &str) -> Result<(String, String, Stri
     let arch = target_arch();
     let version_prefix = format!("{version}+");
 
-    // Architectures to try: prefer native, fall back to x64 on macOS
-    let arch_tries: &[&str] = if os == "mac" {
+    let arch_tries: &[&str] = if arch != "x64" {
         &[arch, "x64"]
     } else {
         &[arch]
