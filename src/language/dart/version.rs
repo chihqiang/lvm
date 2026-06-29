@@ -3,7 +3,9 @@ use anyhow::{Context, Result};
 use crate::config;
 use crate::language;
 
-use super::config::{dart_latest_version_cache_filename, dart_versions_cache_filename, dart_mirror};
+use super::config::{
+    dart_latest_version_cache_filename, dart_mirror, dart_versions_cache_filename,
+};
 
 impl super::DartLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
@@ -21,8 +23,7 @@ impl super::DartLanguage {
 
         let root: serde_json::Value =
             serde_json::from_str(&text).context("Failed to parse Dart latest version JSON")?;
-        root
-            .get("version")
+        root.get("version")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .context("Missing 'version' field in Dart latest version response")
@@ -110,7 +111,9 @@ fn extract_next_continuation_token(xml: &str) -> Option<String> {
     let value_start = start + marker.len();
     let end = xml[value_start..].find("</NextContinuationToken>")?;
     let token = &xml[value_start..value_start + end];
-    if token.is_empty() { None } else { Some(token.to_string()) }
+    if token.is_empty() {
+        None
+    } else {
+        Some(token.to_string())
+    }
 }
-
-

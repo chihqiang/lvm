@@ -388,5 +388,3 @@ pub(crate) fn colored_check_mark() -> String {
         color_reset()
     )
 }
-
-

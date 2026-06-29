@@ -23,8 +23,7 @@ impl super::FlutterLanguage {
         let root: serde_json::Value =
             serde_json::from_str(&text).context("Failed to parse Flutter releases JSON")?;
 
-        root
-            .get("current_release")
+        root.get("current_release")
             .and_then(|cr| cr.get("stable"))
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())

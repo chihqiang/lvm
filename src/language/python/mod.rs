@@ -69,14 +69,8 @@ impl Language for PythonLanguage {
     fn is_installed(&self, version_dir: &Path) -> bool {
         let exe = std::env::consts::EXE_SUFFIX;
         let bin = crate::config::bin_dir_name();
-        version_dir
-            .join(bin)
-            .join(format!("python3{exe}"))
-            .exists()
-            || version_dir
-                .join(bin)
-                .join(format!("python{exe}"))
-                .exists()
+        version_dir.join(bin).join(format!("python3{exe}")).exists()
+            || version_dir.join(bin).join(format!("python{exe}")).exists()
     }
 
     fn list_remote_versions(&self) -> Result<Vec<String>> {
