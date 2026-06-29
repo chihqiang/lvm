@@ -65,7 +65,7 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
         None => version::fetch_latest_lts_version(),
         Some(v) => {
             let v = v.trim().trim_start_matches('v');
-            if v == "system" {
+            if v == crate::config::system_version_keyword() {
                 bail!("Use 'lvm use system' instead of 'lvm install system'");
             }
             if let Ok(major) = v.parse::<i32>()

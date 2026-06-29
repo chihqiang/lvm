@@ -119,12 +119,20 @@ pub(crate) fn downloads_dir() -> Result<PathBuf> {
 
 /// `downloads_dir()`, 但如果失败则回退至默认路径
 pub(crate) fn downloads_dir_or_default() -> PathBuf {
-    downloads_dir().unwrap_or_else(|_| PathBuf::from(".lvm/downloads"))
+    downloads_dir().unwrap_or_else(|_| default_downloads_dir())
 }
 
 /// 通用缓存目录
 pub(crate) fn cache_dir() -> Result<PathBuf> {
     Ok(lvm_home()?.join(cache_dir_name()))
+}
+
+pub(crate) fn default_cache_dir() -> PathBuf {
+    PathBuf::from(".lvm/cache")
+}
+
+pub(crate) fn default_downloads_dir() -> PathBuf {
+    PathBuf::from(".lvm/downloads")
 }
 
 // ─── 别名配置 ───
@@ -376,7 +384,4 @@ pub(crate) fn colored_check_mark() -> String {
     )
 }
 
-/// 系统版本关键字
-pub(crate) fn system_keyword() -> &'static str {
-    "system"
-}
+

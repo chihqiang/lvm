@@ -99,7 +99,7 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
         None => PythonLanguage::fetch_latest_version(),
         Some(v) => {
             let v = v.trim();
-            if v == "system" {
+            if v == crate::config::system_version_keyword() {
                 bail!("Use 'lvm use system' instead of 'lvm install system'");
             }
             let candidate = v.trim_start_matches('v');

@@ -1,23 +1,19 @@
 use anyhow::{Context, Result};
-use std::path::PathBuf;
 
 use crate::config;
 use crate::language;
 
-use super::config::dart_versions_cache_filename;
-
-const DART_S3_BASE: &str = "https://storage.googleapis.com/dart-archive";
-const LATEST_VERSION_URL: &str =
-    "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/VERSION";
+use super::config::{dart_versions_cache_filename, dart_mirror};
 
 impl super::DartLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
         let cache_file = config::cache_dir()
-            .unwrap_or_else(|_| PathBuf::from(".lvm/cache"))
+            .unwrap_or_else(|_| config::default_cache_dir())
             .join("dart-latest-version.json");
 
         let text = language::fetch_with_cache(&cache_file, || {
-            let response = language::get_url(LATEST_VERSION_URL)
+            let url = format!("{}/channels/stable/release/latest/VERSION", dart_mirror());
+            let response = language::get_url(&url)
                 .call()
                 .context("Failed to fetch Dart latest version")?;
             response.into_string().context("Failed to read response")
@@ -34,7 +30,7 @@ impl super::DartLanguage {
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
         let cache_file = config::cache_dir()
-            .unwrap_or_else(|_| PathBuf::from(".lvm/cache"))
+            .unwrap_or_else(|_| config::default_cache_dir())
             .join(dart_versions_cache_filename());
 
         let text = language::fetch_with_cache(&cache_file, || Self::fetch_s3_listing())?;
@@ -56,8 +52,10 @@ impl super::DartLanguage {
         let mut all_versions: Vec<semver::Version> = Vec::new();
         let mut token: Option<String> = None;
 
+        let base = format!("{}/", dart_mirror().trim_end_matches('/'));
+
         for _ in 0..100 {
-            let mut req = language::get_url(DART_S3_BASE)
+            let mut req = language::get_url(&base)
                 .query("list-type", "2")
                 .query("prefix", "channels/stable/release/")
                 .query("max-keys", "1000");
@@ -116,3 +114,5 @@ fn extract_next_continuation_token(xml: &str) -> Option<String> {
     let token = &xml[value_start..value_start + end];
     if token.is_empty() { None } else { Some(token.to_string()) }
 }
+
+

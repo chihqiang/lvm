@@ -32,7 +32,7 @@ pub(crate) fn use_version(
         }
     };
 
-    if version == config::system_keyword() {
+    if version == config::system_version_keyword() {
         language::remove_symlink(&p.current_link())
             .with_context(|| format!("Failed to remove {}", p.current_link().display()))?;
         language::remove_symlink(&p.bin_link())

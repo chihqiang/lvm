@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use semver::Version;
-use std::path::PathBuf;
 
 use crate::config;
 use crate::language;
@@ -35,7 +34,7 @@ impl super::PythonLanguage {
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
         let cache_file = config::cache_dir()
-            .unwrap_or_else(|_| PathBuf::from(".lvm/cache"))
+            .unwrap_or_else(|_| config::default_cache_dir())
             .join(python_versions_cache_filename());
         let text = language::fetch_with_cache(&cache_file, || {
             let response = language::get_url(PYTHON_VERSIONS_URL)

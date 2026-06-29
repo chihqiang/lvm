@@ -22,7 +22,7 @@ impl Language for GoLanguage {
             if v.starts_with("lts/") {
                 bail!("Go does not have LTS releases");
             }
-            if v == "system" {
+            if v == crate::config::system_version_keyword() {
                 bail!("'system' is not supported for Go");
             }
             let v = v.trim_start_matches('v');
