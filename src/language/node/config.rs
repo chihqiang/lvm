@@ -1,8 +1,6 @@
 use std::env;
-use std::path::PathBuf;
 use std::sync::OnceLock;
 
-use crate::config;
 use crate::language;
 
 use super::NodeLanguage;
@@ -82,14 +80,5 @@ impl NodeLanguage {
             target_arch(),
             language::archive_ext(),
         )
-    }
-
-    pub(crate) fn cached_tar(version: &str) -> PathBuf {
-        config::downloads_dir_or_default().join(tarball_filename(
-            version,
-            target_os(),
-            target_arch(),
-            language::archive_ext(),
-        ))
     }
 }
