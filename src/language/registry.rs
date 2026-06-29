@@ -29,7 +29,7 @@ impl LanguageRegistry {
 
     pub fn list_names(&self) -> Vec<&str> {
         let mut names: Vec<&str> = self.languages.keys().map(String::as_str).collect();
-        names.sort_unstable();
+        names.sort();
         names
     }
 }

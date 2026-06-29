@@ -75,7 +75,7 @@ impl Language for GoLanguage {
             };
 
             if arch != config::target_arch() {
-                language::report(format!("Using {os}-{arch} (Rosetta/emulation)"));
+                language::report(format!("Using {os}-{arch} (non-native arch)"));
             }
 
             match language::download_and_install(
