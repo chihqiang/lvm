@@ -25,6 +25,7 @@ pub trait Language {
 ```
 
 默认实现的方法（无需覆盖）：
+
 - `version_dir()` — 拼接 `{lvm_dir}/{prefix}{version}`
 - `current_link()` / `bin_link()` — symlink 路径
 - `is_installed()` — 检查 `version_dir/bin/{binary_name}` 是否存在
@@ -69,6 +70,7 @@ pub mod dart;
 5. 失败时清理临时目录
 
 `verify_fn` 闭包 `|path: &Path| -> Result<()>` 用于校验下载文件：
+
 - zip 格式用 `ZipArchive::new(file)` 检查完整性
 - tar.gz 可传 `|_| Ok(())`
 

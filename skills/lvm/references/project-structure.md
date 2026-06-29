@@ -1,6 +1,6 @@
 # 项目结构
 
-```
+```text
 src/
 ├── main.rs              # 入口，注册所有语言，启动 CLI
 ├── core/                # 核心基础设施（与语言无关）
@@ -47,7 +47,7 @@ src/
 ## CLI 命令（`src/commands/`）
 
 | 命令 | 文件 | 说明 |
-|------|------|------|
+| ------ | ------ | ------ |
 | `install` | `install/mod.rs` | 安装并切换 |
 | `use` | `use_version/mod.rs` | 切换版本 |
 | `list` | `list/mod.rs` | 已安装列表 |
@@ -68,7 +68,7 @@ src/
 
 每个语言三个文件：
 
-```
+```text
 {name}/
 ├── config.rs   — 镜像源 ENV、OS/arch 映射、URL 构造、缓存文件名
 ├── version.rs  — fetch_latest_version()、fetch_all_versions()

@@ -16,7 +16,7 @@ npx skills add chihqiang/lvm --skill lvm -a opencode -y
 ## 快速导航
 
 | 文档 | 说明 |
-|------|------|
+| ----- | ------ |
 | [项目结构](references/project-structure.md) | 目录树、每个文件的职责 |
 | [核心架构](references/architecture.md) | Language trait、注册流程、报告系统、下载安装流程 |
 | [如何新增语言](references/add-new-language.md) | 三步模板（config/version/mod），含完整代码 |
@@ -28,7 +28,7 @@ npx skills add chihqiang/lvm --skill lvm -a opencode -y
 ## 现有语言一览
 
 | 语言 | 版本前缀 | arch fallback | 格式 | 镜像源 ENV |
-|------|---------|--------------|------|-----------|
+| ------ | --------- | -------------- | ------ | ----------- |
 | Node | `"v"` | `arm64`→`x64` | tar.gz/zip | `LVM_NODE_MIRROR` |
 | Go | `"v"` | `arm64`→`amd64` | tar.gz/zip | `LVM_GO_MIRROR` |
 | Java | `""` | `aarch64`→`x64` | tar.gz/zip | `LVM_JAVA_MIRROR` |

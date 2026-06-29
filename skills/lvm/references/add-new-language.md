@@ -4,7 +4,7 @@
 
 ## 1. 创建目录和三个文件
 
-```
+```text
 src/language/{name}/
 ├── config.rs      # 镜像源、OS/arch 映射、URL 构造
 ├── version.rs     # 版本列表获取、最新版本获取
@@ -239,7 +239,7 @@ impl super::{Name}Language {
 ### 版本获取策略参考
 
 | 语言 | 最新版本 API | 版本列表 API | 解析方式 |
-|------|-------------|-------------|---------|
+| ------ | ------------- | ------------- | ------- |
 | Node | `index.json` 取第一项 | `index.json` 全部 | JSON array |
 | Go | 从排序后列表取 last | `?mode=json&include=all` | `serde_json::Value` |
 | Java | `info/available_releases` 的 `"most_recent_lts"` | 同上 | `serde_json::Value` |

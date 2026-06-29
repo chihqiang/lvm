@@ -4,7 +4,7 @@
 
 版本切换通过两层符号链接实现（`src/core/fslink.rs`）：
 
-```
+```text
 ~/.lvm/{lang}/v{version}/bin/{lang}     # 实际版本安装目录
      ↑  current_link 指向
 ~/.lvm/current/{lang}/bin/{lang}         # 当前版本（symlink）
@@ -13,11 +13,13 @@
 ```
 
 路径布局：
+
 - `~/.lvm/{name}/v{version}/bin/{name}` — 版本安装目录
 - `~/.lvm/current/{name}` → `~/.lvm/{name}/v{version}`（当前版本）
 - `~/.lvm/bin/{name}` → `~/.lvm/current/{name}/bin/{name}`（PATH 入口）
 
 切换流程（`use_version_symlinks()`）：
+
 1. 创建临时 symlink `.v20.14.0.tmp-{pid}`
 2. `rename()` 原子替换目标 symlink
 3. 旧 symlink 自动被覆盖
@@ -34,6 +36,7 @@ export PATH="$HOME/.lvm/current/node/bin:$HOME/.lvm/current/go/packages/bin:$HOM
 ```
 
 PATH 条目拼接顺序：
+
 1. 每个语言的 `current/{name}/bin`（自动）
 2. 每个语言的 `env_extra_paths()`（如 Go 的 `current/go/packages/bin`）
 3. `$LVM_HOME/bin`（最后兜底）
@@ -52,7 +55,7 @@ PATH 条目拼接顺序：
 
 ### `lvm install node 20`
 
-```
+```text
 dispatch.rs → resolve_install_args() 解析参数
   → commands::install() → language.install("20")
     → resolve_version() 解析 20 → "20.14.0"
@@ -64,7 +67,7 @@ dispatch.rs → resolve_install_args() 解析参数
 
 ### `lvm use`（不带参数）
 
-```
+```text
 dispatch.rs → 没有 language/version 参数
   → find_lvmrc() 向上遍历查找 .lvmrc
   → 如果找到，解析全部 language=version 对
@@ -85,7 +88,7 @@ dispatch.rs → 没有 language/version 参数
 
 `lvm debug` 输出（`src/commands/debug/mod.rs`）：
 
-```
+```text
 OS:          macos
 Arch:        aarch64
 LVM_HOME:    /Users/user/.lvm

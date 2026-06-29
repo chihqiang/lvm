@@ -15,6 +15,7 @@ let archs: &[&str] = if config::target_arch() != "x64" {
 ```
 
 **理由**:
+
 - 跨平台统一，不引入平台特定代码
 - 回退消息使用 `"non-native arch"` 而非平台特定名称（如 `"Rosetta"`）
 - macOS 上 x64 二进制可通过 Rosetta 2 运行，Linux 上可通过 qemu 或其他模拟器运行
@@ -26,6 +27,7 @@ let archs: &[&str] = if config::target_arch() != "x64" {
 **决策**: 手动使用 `serde_json::Value` 解析 JSON，而非 `#[derive(Deserialize)]`。
 
 **理由**:
+
 - 减少编译依赖和编译时间
 - API 返回结构不稳定时不会被反序列化错误阻塞
 - 很多场景只需要取一两个字段，`Value` 更灵活
@@ -35,6 +37,7 @@ let archs: &[&str] = if config::target_arch() != "x64" {
 **决策**: 使用 `std::sync::OnceLock`（Rust 1.70+ stable）做单例初始化。
 
 **理由**:
+
 - 标准库内置，零依赖
 - 在 Rust edition 2024 中 `LazyLock` 已稳定，但 `OnceLock` 更简洁直观
 - 不需要 `once_cell` 或 `lazy_static` 第三方包
@@ -45,13 +48,14 @@ let archs: &[&str] = if config::target_arch() != "x64" {
 
 **决策**: 全局 `Mutex<Vec<String>>` 缓冲，关键节点 `flush()` 统一输出。
 
-```
+```text
 report("Downloading...") → push to Vec
 report("Extracting...")  → push to Vec
 flush_reports_to_stdout() → drain + writeln
 ```
 
 **理由**:
+
 - 避免进度条和文本输出冲突
 - 错误发生时可以清理缓冲，不输出不完整信息
 - 单元测试中可以检查 report 内容
@@ -72,6 +76,7 @@ if let Ok(modified) = meta.modified()
 ```
 
 **理由**:
+
 - 减少网络请求
 - 本地快速响应
 - TTL 适中，不会用过时版本信息
@@ -83,6 +88,7 @@ if let Ok(modified) = meta.modified()
 **决策**: 使用 `OnceLock<String>` 存储，`get_or_init()` 初始化时读取环境变量，允许默认值。
 
 **理由**:
+
 - 环境变量是动态的，需要 `String` 而非 `&'static str`
 - `OnceLock` 保证线程安全的一次性初始化
 - 运行时不可变，避免并发问题
@@ -92,6 +98,7 @@ if let Ok(modified) = meta.modified()
 **决策**: 使用 `anyhow` 而非 `thiserror` 做错误处理。
 
 **理由**:
+
 - 项目是 CLI 工具而非库，不需要自定义错误类型
 - `anyhow::Context` 和 `bail!` 在 CLI 场景中更便捷
 - `.with_context(|| format!(...))` 提供了丰富的错误上下文
@@ -110,6 +117,7 @@ fs::rename(&tmp, dst)?;
 ```
 
 **理由**:
+
 - `rename()` 是原子操作（POSIX 保证同一文件系统内原子性）
 - 临时文件命名 `.v{version}.tmp-{pid}` 避免冲突
 - 失败时临时文件可清理，不影响原 symlink
@@ -121,6 +129,7 @@ fs::rename(&tmp, dst)?;
 **决策**: Dockerfile.build 使用 `rust:bookworm`（glibc 2.36）作为 builder，保持与 runtime 一致的 glibc。
 
 **理由**:
+
 - 避免 `GLIBC_2.xx` not found 错误
 - 多阶段构建（builder → runner）减小镜像体积
 - install.sh 直接下载预编译二进制，不依赖 Docker

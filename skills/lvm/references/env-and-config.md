@@ -3,7 +3,7 @@
 ## 环境变量一览
 
 | 变量 | 默认值 | 用途 | 定义位置 |
-|------|--------|------|---------|
+| ------ | ------ | ------ | ------- |
 | `LVM_NODE_MIRROR` | `https://nodejs.org/dist` | Node 下载镜像源 | `node/config.rs` |
 | `LVM_GO_MIRROR` | `https://go.dev/dl` | Go 下载镜像源 | `go/config.rs` |
 | `LVM_JAVA_MIRROR` | `https://api.adoptium.net/v3` | Java (Adoptium) API | `java/config.rs` |
@@ -17,7 +17,7 @@
 运行时环境变量（不依赖 `lvm env`）：
 
 | 变量 | 说明 |
-|------|------|
+| ------ | ------ |
 | `LVM_HOME` | 由 `lvm env` 设置，指向 `~/.lvm` |
 | `{LANG}_HOME` | 由 `lvm env` 设置，如 `DART_HOME`、`FLUTTER_HOME` |
 | `PATH` | 由 `lvm env` 追加各语言 `bin/` 目录 |
@@ -26,7 +26,7 @@
 
 `.lvmrc` 文件使用 `key=value` 格式，每行一个语言版本映射：
 
-```
+```text
 node=20.14.0
 go=1.22.3
 python=3.12.0
@@ -47,6 +47,7 @@ flutter=3.29.0
 ## 离线模式
 
 `lvm install --offline` 设置离线标志：
+
 - 跳过网络下载，仅使用缓存文件
 - 如果缓存不存在则报错
 - 断点续传也被禁用
