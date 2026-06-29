@@ -7,6 +7,12 @@ description: LVM (Language Version Manager) — Rust CLI tool for managing multi
 
 跨平台语言版本管理工具，支持 Node、Go、Java、Python、Dart、Flutter。
 
+## 安装
+
+```bash
+npx skills add chihqiang/lvm --skill lvm -a opencode -y
+```
+
 ## 快速导航
 
 | 文档 | 说明 |
