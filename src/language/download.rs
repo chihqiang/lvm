@@ -28,6 +28,40 @@ fn cleanup_install_dir(path: &Path) {
     }
 }
 
+fn ensure_downloaded(
+    dl_url: &str,
+    tar_path: &Path,
+    display_name: &str,
+    version: &str,
+    verify: impl Fn(&Path) -> Result<()>,
+) -> Result<()> {
+    if is_offline() {
+        if tar_path.exists() {
+            return Ok(());
+        }
+        bail!("Offline mode: no cached file at {}", tar_path.display())
+    }
+
+    if tar_path.exists() {
+        if verify(tar_path).is_ok() {
+            return Ok(());
+        }
+        report(format!(
+            "Verification failed, re-downloading {display_name} {version}"
+        ));
+        fs::remove_file(tar_path)?;
+    }
+
+    fs::create_dir_all(tar_path.parent().context("Invalid tar path")?)
+        .context("Failed to create download cache directory")?;
+    report(format!("Downloading {display_name} {version}"));
+    report(format!("  from: {dl_url}"));
+    report(format!("  to:   {}", tar_path.display()));
+    flush_reports_to_stdout();
+    download(dl_url, tar_path, true)?;
+    verify(tar_path)
+}
+
 pub(crate) fn download_and_install(
     dl_url: &str,
     tar_path: &Path,
@@ -36,27 +70,7 @@ pub(crate) fn download_and_install(
     display_name: &str,
     verify: impl Fn(&Path) -> Result<()>,
 ) -> Result<()> {
-    if !tar_path.exists() {
-        fs::create_dir_all(tar_path.parent().context("Invalid tar path")?)
-            .context("Failed to create download cache directory")?;
-        report(format!("Downloading {display_name} {version}"));
-        report(format!("  from: {dl_url}"));
-        report(format!("  to:   {}", tar_path.display()));
-        flush_reports_to_stdout();
-        download(dl_url, tar_path, true)?;
-    }
-    if !is_offline()
-        && let Err(e) = verify(tar_path)
-    {
-        report(format!(
-            "Verification failed ({e}), re-downloading {display_name} {version}"
-        ));
-        if tar_path.exists() {
-            fs::remove_file(tar_path)?;
-        }
-        download(dl_url, tar_path, true)?;
-        verify(tar_path)?;
-    }
+    ensure_downloaded(dl_url, tar_path, display_name, version, verify)?;
 
     let temp_dir = install_temp_dir(version_dir)?;
     cleanup_install_dir(&temp_dir);
