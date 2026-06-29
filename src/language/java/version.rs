@@ -8,7 +8,7 @@ use super::config::{java_mirror, java_versions_cache_filename, target_arch, targ
 
 pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
     let cache_file = config::cache_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from(".lvm/cache"))
+        .unwrap_or_else(|_| config::default_cache_dir())
         .join(java_versions_cache_filename());
 
     let text = language::fetch_with_cache(&cache_file, || {

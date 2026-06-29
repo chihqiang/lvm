@@ -105,7 +105,7 @@ impl NodeLanguage {
 
 pub(crate) fn fetch_index_tab() -> Result<String> {
     let cache_file = config::cache_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from(".lvm/cache"))
+        .unwrap_or_else(|_| config::default_cache_dir())
         .join(node_versions_cache_filename());
     language::fetch_with_cache(&cache_file, || NodeLanguage::fetch_text(index_tab_path()))
 }

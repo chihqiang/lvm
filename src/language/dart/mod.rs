@@ -1,17 +1,19 @@
 pub(crate) mod config;
 mod version;
 
-use anyhow::{Result, bail};
 use std::path::Path;
+
+use anyhow::{Context, Result, bail};
+use zip::ZipArchive;
 
 use super::Language;
 use crate::language;
 
-pub struct PythonLanguage;
+pub struct DartLanguage;
 
-impl Language for PythonLanguage {
+impl Language for DartLanguage {
     fn name(&self) -> &'static str {
-        "python"
+        "dart"
     }
 
     fn version_prefix(&self) -> &'static str {
@@ -22,14 +24,13 @@ impl Language for PythonLanguage {
         let resolved = resolve_version(version)?;
         let version_dir = self.version_dir(&resolved);
         if self.is_installed(&version_dir) {
-            language::report_already_installed("Python", &resolved);
+            language::report_already_installed("Dart", &resolved);
             return Ok(resolved);
         }
 
         let os = config::target_os();
-        let ext = language::archive_ext();
-        let archs: &[&str] = if config::target_arch() != "x86_64" {
-            &[config::target_arch(), "x86_64"]
+        let archs: &[&str] = if config::target_arch() != "x64" {
+            &[config::target_arch(), "x64"]
         } else {
             &[config::target_arch()]
         };
@@ -39,21 +40,28 @@ impl Language for PythonLanguage {
                 return Ok(resolved);
             }
 
-            let url = config::download_url(&resolved, os, arch, ext);
+            let url = config::download_url(&resolved, os, arch);
             let tar_path = crate::config::downloads_dir_or_default()
-                .join(config::tarball_filename(&resolved, os, arch, ext));
+                .join(config::tarball_filename(&resolved, os, arch));
 
             if arch != config::target_arch() {
                 language::report_non_native_arch(os, arch);
             }
+
+            let verify_zip = |path: &Path| -> Result<()> {
+                let file = std::fs::File::open(path)
+                    .with_context(|| format!("Failed to open {}", path.display()))?;
+                ZipArchive::new(file).context("Corrupted zip archive")?;
+                Ok(())
+            };
 
             match language::download_and_install(
                 &url,
                 &tar_path,
                 &resolved,
                 &version_dir,
-                "Python",
-                |_| Ok(()),
+                "Dart",
+                verify_zip,
             ) {
                 Ok(()) => return Ok(resolved),
                 Err(_e) if i + 1 < archs.len() => {
@@ -63,14 +71,7 @@ impl Language for PythonLanguage {
             }
         }
 
-        bail!("Failed to install Python {resolved}")
-    }
-
-    fn is_installed(&self, version_dir: &Path) -> bool {
-        let exe = std::env::consts::EXE_SUFFIX;
-        let bin = crate::config::bin_dir_name();
-        version_dir.join(bin).join(format!("python3{exe}")).exists()
-            || version_dir.join(bin).join(format!("python{exe}")).exists()
+        bail!("Failed to install Dart {resolved}")
     }
 
     fn list_remote_versions(&self) -> Result<Vec<String>> {
@@ -81,14 +82,18 @@ impl Language for PythonLanguage {
         Self::fetch_latest_version()
     }
 
+    fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
+        vec![self.current_link().join(crate::config::bin_dir_name())]
+    }
+
     fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
-        vec![("PYTHON_HOME", self.current_link())]
+        vec![("DART_HOME", self.current_link())]
     }
 }
 
 fn resolve_version(version: Option<&str>) -> Result<String> {
     match version {
-        None => PythonLanguage::fetch_latest_version(),
+        None => DartLanguage::fetch_latest_version(),
         Some(v) => {
             let v = v.trim();
             if v == crate::config::system_version_keyword() {
@@ -98,11 +103,11 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
             if let Ok(ver) = semver::Version::parse(candidate) {
                 return Ok(ver.to_string());
             }
-            let avail: Vec<semver::Version> = PythonLanguage::fetch_all_versions()?
+            let avail: Vec<semver::Version> = DartLanguage::fetch_all_versions()?
                 .iter()
                 .filter_map(|s| semver::Version::parse(s).ok())
                 .collect();
-            language::resolve_partial_version(candidate, &avail, "Python")
+            language::resolve_partial_version(candidate, &avail, "Dart")
         }
     }
 }

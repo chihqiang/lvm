@@ -22,7 +22,7 @@ impl Language for JavaLanguage {
         let resolved = resolve_version(version)?;
         let version_dir = self.version_dir(&resolved);
         if self.is_installed(&version_dir) {
-            language::report(format!("Java {resolved} is already installed"));
+            language::report_already_installed("Java", &resolved);
             return Ok(resolved);
         }
 
@@ -30,9 +30,9 @@ impl Language for JavaLanguage {
         let tar_path = crate::config::downloads_dir_or_default().join(&tarball_name);
 
         let verify_java_checksum = |tar_path: &Path| -> Result<()> {
-            language::report("Verifying checksum...");
+            language::report_verifying_checksum();
             language::verify_sha256(tar_path, &checksum_hex)?;
-            language::report("Checksum verified");
+            language::report_checksum_verified();
             Ok(())
         };
 
@@ -65,7 +65,7 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
         None => version::fetch_latest_lts_version(),
         Some(v) => {
             let v = v.trim().trim_start_matches('v');
-            if v == "system" {
+            if v == crate::config::system_version_keyword() {
                 bail!("Use 'lvm use system' instead of 'lvm install system'");
             }
             if let Ok(major) = v.parse::<i32>()

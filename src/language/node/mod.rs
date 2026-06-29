@@ -28,7 +28,7 @@ impl Language for NodeLanguage {
             NodeLanguage::resolve_install_version(version)?;
         let version_dir = self.version_dir(&resolved_version);
         if self.is_installed(&version_dir) {
-            language::report(format!("Node {resolved_version} is already installed"));
+            language::report_already_installed("Node", &resolved_version);
             return Ok(resolved_version);
         }
 
@@ -92,9 +92,9 @@ impl Language for NodeLanguage {
                     );
                 }
                 if let Some(expected) = checksums.get(tarball_filename.as_ref()) {
-                    language::report("Verifying checksum...");
+                    language::report_verifying_checksum();
                     language::verify_sha256(tar_path, expected)?;
-                    language::report("Checksum verified");
+                    language::report_checksum_verified();
                 } else {
                     language::report(format!(
                         "Warning: no checksum entry for '{tarball_filename}', verification skipped"
@@ -104,7 +104,7 @@ impl Language for NodeLanguage {
             };
 
             if arch != config::target_arch() {
-                language::report(format!("Using {os}-{arch} (non-native arch)"));
+                language::report_non_native_arch(os, arch);
             }
 
             match language::download_and_install(
@@ -117,10 +117,7 @@ impl Language for NodeLanguage {
             ) {
                 Ok(()) => return Ok(resolved_version),
                 Err(_e) if i + 1 < archs.len() => {
-                    language::report(format!(
-                        "Download failed for {arch}, falling back to {next}",
-                        next = archs[i + 1]
-                    ));
+                    language::report_fallback(arch, archs[i + 1]);
                 }
                 Err(e) => return Err(e),
             }

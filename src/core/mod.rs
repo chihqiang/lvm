@@ -14,5 +14,8 @@ pub(crate) use fslink::{
     path_separator, remove_symlink,
 };
 pub(crate) use http::{get_url, set_offline};
-pub(crate) use report::{flush_reports_to_stdout, report};
+pub(crate) use report::{
+    flush_reports_to_stdout, report, report_already_installed, report_checksum_verified,
+    report_fallback, report_non_native_arch, report_verifying_checksum,
+};
 pub(crate) use version::{resolve_partial_version, sort_versions};
