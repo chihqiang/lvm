@@ -1,5 +1,6 @@
 pub(crate) mod config;
 pub(crate) mod lts;
+mod nvmrc;
 mod version;
 
 use std::collections::HashMap;
@@ -12,6 +13,7 @@ use crate::language;
 use crate::core::http::get_url;
 
 pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
+pub(crate) use nvmrc::read_nvmrc;
 
 /// Node.js 语言
 pub struct NodeLanguage;
