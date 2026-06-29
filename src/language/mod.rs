@@ -2,24 +2,16 @@ pub mod go;
 pub mod java;
 pub mod node;
 
-mod checksum;
-mod download;
-mod extract;
-mod fslink;
-mod http;
 mod language_trait;
 mod registry;
-mod report;
-mod version;
 
-pub(crate) use checksum::verify_sha256;
-pub(crate) use download::{download_and_install, fetch_from_mirror, fetch_with_cache};
-pub(crate) use fslink::{
-    CURRENT_DEFAULT_MARKER, CURRENT_MARKER, DEFAULT_MARKER, archive_ext, exe_suffix,
-    path_separator, remove_symlink,
+pub(crate) use crate::core::{
+    verify_sha256, download_and_install, fetch_from_mirror, fetch_with_cache,
+    CURRENT_DEFAULT_MARKER, CURRENT_MARKER, DEFAULT_MARKER,
+    archive_ext, exe_suffix, path_separator, remove_symlink,
+    get_url, set_offline,
+    flush_reports_to_stdout, report,
+    resolve_partial_version, sort_versions,
 };
-pub(crate) use http::{get_url, set_offline};
 pub(crate) use language_trait::Language;
 pub(crate) use registry::LanguageRegistry;
-pub(crate) use report::{flush_reports_to_stdout, report};
-pub(crate) use version::{resolve_partial_version, sort_versions};

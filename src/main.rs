@@ -5,6 +5,7 @@
 
 mod commands;
 mod config;
+mod core;
 
 use anyhow::Result;
 

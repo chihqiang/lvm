@@ -3,9 +3,9 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::config;
-use crate::language::extract;
-use crate::language::http::{get_url, is_offline};
-use crate::language::report::{flush_reports_to_stdout, report};
+use crate::core::extract;
+use crate::core::http::{get_url, is_offline};
+use crate::core::report::{flush_reports_to_stdout, report};
 use anyhow::{Context, Result, bail};
 
 fn install_temp_dir(version_dir: &Path) -> Result<std::path::PathBuf> {

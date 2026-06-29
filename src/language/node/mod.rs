@@ -9,7 +9,7 @@ use anyhow::{Context, Result, bail};
 
 use super::Language;
 use crate::language;
-use crate::language::http::get_url;
+use crate::core::http::get_url;
 
 pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
 
