@@ -1,11 +1,5 @@
 use std::env;
-use std::path::PathBuf;
 use std::sync::OnceLock;
-
-use crate::config;
-use crate::language;
-
-use super::GoLanguage;
 
 static GO_MIRROR: OnceLock<String> = OnceLock::new();
 
@@ -61,23 +55,4 @@ pub(crate) fn go_versions_query_suffix() -> &'static str {
     "/?mode=json&include=all"
 }
 
-impl GoLanguage {
-    pub(crate) fn download_url(version: &str) -> String {
-        download_url(
-            go_mirror(),
-            version,
-            target_os(),
-            target_arch(),
-            language::archive_ext(),
-        )
-    }
 
-    pub(crate) fn cached_tar(version: &str) -> PathBuf {
-        config::downloads_dir_or_default().join(tarball_filename(
-            version,
-            target_os(),
-            target_arch(),
-            language::archive_ext(),
-        ))
-    }
-}

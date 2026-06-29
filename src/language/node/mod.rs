@@ -42,7 +42,10 @@ impl Language for NodeLanguage {
         let ext = language::archive_ext();
 
         let checksums: HashMap<String, String> = if !source_is_url {
-            fetch_checksums(node_mirror(), &resolved_version)?
+            fetch_checksums(node_mirror(), &resolved_version).unwrap_or_else(|e| {
+                language::report(format!("Warning: could not fetch checksums ({e}), verification skipped"));
+                HashMap::new()
+            })
         } else {
             HashMap::new()
         };
