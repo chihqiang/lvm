@@ -1,4 +1,5 @@
 #[test]
+#[serial_test::serial]
 fn test_report_and_drain() {
     let _ = lvm::core::report::drain_reports();
     lvm::core::report::report("test message 1");
@@ -18,6 +19,7 @@ fn test_drain_empty() {
 }
 
 #[test]
+#[serial_test::serial]
 fn test_report_functions_format() {
     let _ = lvm::core::report::drain_reports();
     lvm::core::report::report_verifying_checksum();
