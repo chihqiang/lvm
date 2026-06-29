@@ -109,7 +109,7 @@ lvm list-remote python
 
 # 安装指定版本
 lvm install python 3.12       # 安装最新的 3.12.x
-lvm install python 3.11.0     # 精确版本
+lvm install python 3.11.15       # 精确版本
 
 # 列出已安装版本
 lvm list python

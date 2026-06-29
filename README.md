@@ -109,7 +109,7 @@ lvm list-remote python
 
 # Install a specific version
 lvm install python 3.12       # Install the latest 3.12.x
-lvm install python 3.11.0     # Exact version
+lvm install python 3.11.15     # Exact version
 
 # List installed versions
 lvm list python
