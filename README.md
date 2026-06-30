@@ -1,6 +1,6 @@
 # lvm
 
-A multi-runtime version manager written in Rust. Cross-platform single binary, unified management of **Node.js, Go, Java, Python, Dart, Flutter, and Kotlin** versions, supports global/project automatic switching, built-in mirror acceleration, and environment isolation with no system pollution.
+A multi-runtime version manager written in Rust. Cross-platform single binary, unified management of **Node.js, Go, Java, Python, Dart, Flutter, Kotlin, and Rust** versions, supports global/project automatic switching, built-in mirror acceleration, and environment isolation with no system pollution.
 
 [![Check](https://github.com/chihqiang/lvm/actions/workflows/check.yml/badge.svg)](https://github.com/chihqiang/lvm/actions/workflows/check.yml)
 [![HitCount](https://views.whatilearened.today/views/github/chihqiang/lvm.svg)](https://github.com/chihqiang/lvm)
@@ -168,17 +168,37 @@ lvm current flutter
 lvm list-remote kotlin
 
 # Install a specific version
-lvm install kotlin 2.4
-lvm install kotlin 1.9.25
+lvm install kotlin 2.0
+lvm install kotlin 1.9.22
 
 # List installed versions
 lvm list kotlin
 
 # Switch version
-lvm use kotlin 2.4
+lvm use kotlin 2.0
 
 # Show current version
 lvm current kotlin
+```
+
+### Rust
+
+```bash
+# List installable versions
+lvm list-remote rust
+
+# Install a specific version
+lvm install rust 1.96
+lvm install rust 1.88.0
+
+# List installed versions
+lvm list rust
+
+# Switch version
+lvm use rust 1.88.0
+
+# Show current version
+lvm current rust
 ```
 
 ## Commands
@@ -276,7 +296,7 @@ eslint
 
 ## Features
 
-- **Multi-language**: Node.js, Go, Java, Python, Dart, Flutter, and Kotlin — plugin-based architecture for easy extension
+- **Multi-language**: Node.js, Go, Java, Python, Dart, Flutter, Kotlin, and Rust — plugin-based architecture for easy extension
 - **Mirror acceleration**: Each language supports a configurable mirror source via `LVM_*_MIRROR` environment variables
 - **Architecture fallback**: Automatically falls back from `arm64` to `x64` when native builds are unavailable (Java 8 on Apple Silicon, older Node/Go versions, etc.)
 - **Security verification**: Automatically verifies SHA256 checksums after download
@@ -311,6 +331,9 @@ export LVM_FLUTTER_MIRROR=https://storage.googleapis.com/flutter_infra_release/r
 
 # Kotlin (defaults to https://github.com/JetBrains/kotlin/releases/download)
 export LVM_KOTLIN_MIRROR=https://github.com/JetBrains/kotlin/releases/download
+
+# Rust (defaults to https://static.rust-lang.org/dist)
+export LVM_RUST_MIRROR=https://static.rust-lang.org/dist
 ```
 
 ## Shell Integration
@@ -322,12 +345,12 @@ eval "$(lvm env)"    # PATH and language-specific env vars
 eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 ```
 
-- **`lvm env`**: Outputs `LVM_HOME`, `GOPATH` (Go), `FLUTTER_HOME` (Flutter), `KOTLIN_HOME` (Kotlin), and `PATH` environment variables. Windows outputs cmd.exe syntax.
+- **`lvm env`**: Outputs `LVM_HOME`, `GOPATH` (Go), `FLUTTER_HOME` (Flutter), `KOTLIN_HOME` (Kotlin), and `PATH` environment variables. `rustc` and `cargo` are also symlinked into `~/.lvm/bin/`. Windows outputs cmd.exe syntax.
 - **`lvm hook`**: Outputs auto-switch script. Defaults to detecting the current shell; use `--shell` to override. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook, fish uses `--on-variable PWD`, powershell overrides the `prompt` function — automatically runs `lvm use` when entering a directory containing `.lvmrc` or `.nvmrc`. Not available on Windows (unless `--shell powershell` is explicitly given).
 - **`lvm env --shell bash|zsh|fish`**: Outputs command completion scripts.
 - **Node.js**: npm global packages are installed to the corresponding version directory; not shared after switching versions.
 - **Go**: `GOPATH` is automatically set to `$LVM_HOME/current/go/packages` (symlink dynamically points to the current version). Binaries installed via `go install` are isolated from the system and other versions.
-- **Java/Python/Dart/Flutter/Kotlin**: `JAVA_HOME` / `PYTHON_HOME` / `DART_HOME` / `FLUTTER_HOME` / `KOTLIN_HOME` are automatically set to the active version directory when switching.
+- **Java/Python/Dart/Flutter/Kotlin/Rust**: `JAVA_HOME` / `PYTHON_HOME` / `DART_HOME` / `FLUTTER_HOME` / `KOTLIN_HOME` are automatically set to the active version directory when switching.
 - **Dart/Flutter**: `PUB_CACHE` is automatically set to the active version's `pub-cache` directory, isolating globally activated pub packages per version to prevent cross-version incompatibility.
 
 ## Storage Layout
@@ -341,7 +364,9 @@ eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 │   ├── python   -> current/python/bin/python3
 │   ├── dart     -> current/dart/bin/dart
 │   ├── flutter  -> current/flutter/bin/flutter
-│   └── kotlin   -> current/kotlin/bin/kotlin
+│   ├── kotlin   -> current/kotlin/bin/kotlin
+│   ├── rustc    -> current/rust/bin/rustc
+│   └── cargo    -> current/rust/bin/cargo
 ├── current/
 │   ├── node     -> ../node/v22.0.0   # Current active Node version
 │   ├── go       -> ../go/v1.22.0     # Current active Go version
@@ -372,6 +397,14 @@ eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 │       └── pub-cache/    # pub global packages (per-version isolation)
 ├── kotlin/               # Installed Kotlin compiler versions
 │   └── 2.0.0/
+├── rust/                 # Installed Rust toolchain versions
+│   └── 1.82.0/
+│       ├── bin/          # rustc, cargo, rustdoc (symlinks into rustc/bin/, cargo/bin/)
+│       ├── rustc/
+│       │   └── bin/
+│       ├── cargo/
+│       │   └── bin/
+│       └── ...
 ├── aliases/              # Alias configuration
 │   ├── node/
 │   │   └── default -> 22

@@ -27,6 +27,7 @@ fn run() -> Result<()> {
     registry.register(Box::new(language::dart::DartLanguage));
     registry.register(Box::new(language::flutter::FlutterLanguage));
     registry.register(Box::new(language::kotlin::KotlinLanguage));
+    registry.register(Box::new(language::rust::RustLanguage));
 
     let mut cmd = commands::cli::build_cli();
     let cli = cmd.get_matches_mut();
