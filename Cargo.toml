@@ -1,9 +1,9 @@
 [package]
 name = "lvm"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2024"
 license = "Apache-2.0"
-description = "Language Version Manager - unified version management for Node.js, Go, and more"
+description = "Language Version Manager - unified cross-platform version management for Node.js, Go, Java, Python, Dart, Flutter, Kotlin, and Rust"
 repository = "https://github.com/chihqiang/lvm"
 keywords = ["version-manager", "node", "go", "cli", "dev-tools"]
 categories = ["command-line-utilities", "development-tools"]

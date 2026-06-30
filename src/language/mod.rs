@@ -5,6 +5,7 @@ pub mod java;
 pub mod kotlin;
 pub mod node;
 pub mod python;
+pub mod rust;
 
 mod language_trait;
 mod registry;
