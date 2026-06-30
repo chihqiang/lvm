@@ -1,14 +1,14 @@
-use crate::config;
+use lvm::core::config;
 
 use crate::commands::output;
 
 fn lvm_auto_function() -> (String, String) {
     let lvm_bin = config::lvm_home().map_or_else(
         |_| std::path::PathBuf::from("lvm"),
-        |p| p.join(config::bin_dir_name()).join("lvm"),
+        |p| p.join(config::BIN_DIR).join("lvm"),
     );
     let lvm_bin = lvm_bin.to_string_lossy().to_string();
-    let lvmrc = config::lvmrc_filename().to_string();
+    let lvmrc = config::LVM_FILENAME.to_string();
     (lvm_bin, lvmrc)
 }
 
@@ -31,7 +31,7 @@ fn hook_zsh() {
 }
 
 fn hook_fish() {
-    let lvmrc = config::lvmrc_filename();
+    let lvmrc = config::LVM_FILENAME;
 
     println!("function __lvm_auto --on-variable PWD --description \"Auto-switch .lvmrc versions\"");
     println!("    if test -f {lvmrc}");
@@ -63,7 +63,7 @@ pub(crate) fn hook(shell: Option<&str>) {
                 config::lvm_home().unwrap_or_else(|_| std::path::PathBuf::from("./.lvm"));
             output::info(format!(
                 "Manually add {} to your PATH and use 'lvm use' in your project directories",
-                home_path.join(config::bin_dir_name()).display()
+                home_path.join(config::BIN_DIR).display()
             ));
         }
         return;

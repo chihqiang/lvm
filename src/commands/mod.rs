@@ -15,7 +15,7 @@ pub(crate) mod uninstall;
 pub(crate) mod use_version;
 pub(crate) mod which;
 
-use crate::config;
+use lvm::core::config;
 
 pub(crate) use alias::{alias, unalias};
 pub(crate) use cache::cache_clear;
@@ -32,8 +32,8 @@ pub(crate) use uninstall::uninstall;
 pub(crate) use use_version::use_version;
 pub(crate) use which::which;
 
-use crate::language::{self, Language, LanguageRegistry};
 use anyhow::{Context, Result};
+use lvm::language::{self, Language, LanguageRegistry};
 
 pub(crate) fn flush() {
     language::flush_reports_to_stdout();
@@ -44,7 +44,7 @@ pub(crate) fn get_language<'a>(
     name: &str,
 ) -> Result<&'a dyn Language> {
     registry.get(name).with_context(|| {
-        let available = registry.list_names().join(config::list_separator());
+        let available = registry.list_names().join(config::LIST_SEPARATOR);
         format!("Unknown language '{name}', available: {available}")
     })
 }

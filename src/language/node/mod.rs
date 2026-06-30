@@ -9,11 +9,11 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 
 use super::Language;
+use crate::core::http::get_url;
 use crate::language;
-use lvm::core::http::get_url;
 
 pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
-pub(crate) use nvmrc::read_nvmrc;
+pub use nvmrc::read_nvmrc;
 
 /// Node.js 语言
 pub struct NodeLanguage;
@@ -162,9 +162,11 @@ impl Language for NodeLanguage {
 
     fn post_install(&self, version: &str) -> Result<()> {
         let version_dir = self.version_dir(self.strip_version_prefix(version));
-        let npm_path = version_dir
-            .join(crate::config::bin_dir_name())
-            .join(format!("{}{}", npm_binary_name(), language::exe_suffix()));
+        let npm_path = version_dir.join(crate::config::BIN_DIR).join(format!(
+            "{}{}",
+            npm_binary_name(),
+            language::exe_suffix()
+        ));
         install_default_packages(&npm_path)
     }
 }

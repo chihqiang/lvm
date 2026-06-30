@@ -1,5 +1,5 @@
-use crate::config;
-use crate::language::LanguageRegistry;
+use lvm::core::config;
+use lvm::language::LanguageRegistry;
 
 /// 打印调试信息（系统、注册表、PATH 等）
 pub(crate) fn debug(registry: &LanguageRegistry) {
@@ -36,7 +36,7 @@ pub(crate) fn debug(registry: &LanguageRegistry) {
     println!();
 
     // Check PATH for conflicts
-    let bin_path = home.join(config::bin_dir_name());
+    let bin_path = home.join(config::BIN_DIR);
     println!("PATH entries:");
     if let Some(paths) = std::env::var_os("PATH") {
         for p in std::env::split_paths(&paths) {

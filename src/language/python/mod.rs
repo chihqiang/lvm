@@ -27,48 +27,40 @@ impl Language for PythonLanguage {
         }
 
         let os = config::target_os();
+        let native_arch = config::target_arch();
         let ext = language::archive_ext();
-        let archs: &[&str] = if config::target_arch() != "x86_64" {
-            &[config::target_arch(), "x86_64"]
+        let archs: &[&str] = if native_arch != "x86_64" {
+            &[native_arch, "x86_64"]
         } else {
-            &[config::target_arch()]
+            &[native_arch]
         };
 
-        for (i, &arch) in archs.iter().enumerate() {
-            if i > 0 && self.is_installed(&version_dir) {
-                return Ok(resolved);
-            }
-
-            let url = config::download_url(&resolved, os, arch, ext);
-            let tar_path = crate::config::downloads_dir_or_default()
-                .join(config::tarball_filename(&resolved, os, arch, ext));
-
-            if arch != config::target_arch() {
-                language::report_non_native_arch(os, arch);
-            }
-
-            match language::download_and_install(
-                &url,
-                &tar_path,
-                &resolved,
-                &version_dir,
-                "Python",
-                |_| Ok(()),
-            ) {
-                Ok(()) => return Ok(resolved),
-                Err(_e) if i + 1 < archs.len() => {
-                    language::report_fallback(arch, archs[i + 1]);
-                }
-                Err(e) => return Err(e),
-            }
-        }
-
-        bail!("Failed to install Python {resolved}")
+        language::install_with_fallback(
+            "Python",
+            &resolved,
+            os,
+            native_arch,
+            archs,
+            &|| self.is_installed(&version_dir),
+            &mut |arch| {
+                let url = config::download_url(&resolved, os, arch, ext);
+                let tar_path = crate::config::downloads_dir_or_default()
+                    .join(config::tarball_filename(&resolved, os, arch, ext));
+                language::download_and_install(
+                    &url,
+                    &tar_path,
+                    &resolved,
+                    &version_dir,
+                    "Python",
+                    |_| Ok(()),
+                )
+            },
+        )
     }
 
     fn is_installed(&self, version_dir: &Path) -> bool {
         let exe = std::env::consts::EXE_SUFFIX;
-        let bin = crate::config::bin_dir_name();
+        let bin = crate::config::BIN_DIR;
         version_dir.join(bin).join(format!("python3{exe}")).exists()
             || version_dir.join(bin).join(format!("python{exe}")).exists()
     }
@@ -87,22 +79,13 @@ impl Language for PythonLanguage {
 }
 
 fn resolve_version(version: Option<&str>) -> Result<String> {
-    match version {
-        None => PythonLanguage::fetch_latest_version(),
-        Some(v) => {
-            let v = v.trim();
-            if v == crate::config::system_version_keyword() {
-                bail!("Use 'lvm use system' instead of 'lvm install system'");
-            }
-            let candidate = v.trim_start_matches('v');
-            if let Ok(ver) = semver::Version::parse(candidate) {
-                return Ok(ver.to_string());
-            }
-            let avail: Vec<semver::Version> = PythonLanguage::fetch_all_versions()?
-                .iter()
-                .filter_map(|s| semver::Version::parse(s).ok())
-                .collect();
-            language::resolve_partial_version(candidate, &avail, "Python")
-        }
+    if version.is_some_and(|v| v.trim() == crate::config::SYSTEM_VERSION_KEYWORD) {
+        bail!("Use 'lvm use system' instead of 'lvm install system'");
     }
+    language::resolve_version(
+        "Python",
+        version,
+        &|| PythonLanguage::fetch_latest_version(),
+        &|| PythonLanguage::fetch_all_versions(),
+    )
 }

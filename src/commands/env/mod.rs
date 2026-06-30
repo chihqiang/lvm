@@ -1,7 +1,7 @@
 use clap_complete::{Shell, generate};
 
-use crate::config;
-use crate::language::{self, LanguageRegistry};
+use lvm::core::config;
+use lvm::language::{self, LanguageRegistry};
 
 use crate::commands::{cli, output};
 
@@ -10,13 +10,13 @@ pub(crate) fn env(registry: &LanguageRegistry) {
         output::warn("Cannot determine LVM home directory");
         return;
     };
-    let bin_path = lvm_home_path.join(config::bin_dir_name());
+    let bin_path = lvm_home_path.join(config::BIN_DIR);
 
     let mut path_entries = Vec::new();
     let mut extra_vars = Vec::new();
     for name in registry.list_names() {
         if let Some(lang) = registry.get(name) {
-            path_entries.push(lang.current_link().join(config::bin_dir_name()));
+            path_entries.push(lang.current_link().join(config::BIN_DIR));
             path_entries.extend(lang.env_extra_paths());
             extra_vars.extend(lang.env_extra_vars());
         }

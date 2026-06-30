@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::config;
+use crate::core::config;
 use crate::core::report::report;
 use anyhow::{Context, Result, bail};
 
@@ -171,7 +171,7 @@ pub fn use_version_symlinks(
     fs::create_dir_all(bin_parent).context("Failed to create symlink directory")?;
     let bin_target =
         current_link
-            .join(config::bin_dir_name())
+            .join(config::BIN_DIR)
             .join(format!("{}{}", bin_name, exe_suffix()));
 
     replace_symlink(&bin_target, bin_link).context("Failed to replace binary symlink")?;

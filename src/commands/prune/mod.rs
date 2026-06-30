@@ -1,5 +1,5 @@
-use crate::config;
-use crate::language::{self, LanguageRegistry};
+use lvm::core::alias;
+use lvm::language::{self, LanguageRegistry};
 
 use crate::commands::{flush, get_language, output};
 use anyhow::Result;
@@ -17,7 +17,7 @@ pub(crate) fn prune(registry: &LanguageRegistry, language: &str, keep: usize) ->
     versions.reverse();
 
     let current = p.current_version()?;
-    let default = config::get_default_version(language)?;
+    let default = alias::get_default_version(language)?;
 
     let to_remove: Vec<&str> = versions
         .iter()

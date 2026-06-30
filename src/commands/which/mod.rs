@@ -1,4 +1,4 @@
-use crate::language::LanguageRegistry;
+use lvm::language::LanguageRegistry;
 
 use crate::commands::get_language;
 use anyhow::{Context, Result};

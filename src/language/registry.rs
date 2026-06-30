@@ -2,14 +2,9 @@ use std::collections::HashMap;
 
 use super::language_trait::Language;
 
+#[derive(Default)]
 pub struct LanguageRegistry {
     languages: HashMap<String, Box<dyn Language>>,
-}
-
-impl Default for LanguageRegistry {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl LanguageRegistry {

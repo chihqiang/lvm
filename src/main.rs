@@ -5,11 +5,8 @@
 
 mod commands;
 
-pub(crate) use lvm::core::config;
-
 use anyhow::Result;
-
-mod language;
+use lvm::language;
 
 fn main() {
     if let Err(err) = run() {

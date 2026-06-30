@@ -1,7 +1,7 @@
 use std::process::Command;
 
-use crate::language;
-use crate::language::LanguageRegistry;
+use lvm::language;
+use lvm::language::LanguageRegistry;
 
 use crate::commands::{binary_dir, get_language, output};
 use anyhow::{Context, Result, bail};
