@@ -86,7 +86,10 @@ impl Language for FlutterLanguage {
     }
 
     fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
-        vec![("FLUTTER_HOME", self.current_link())]
+        vec![
+            ("FLUTTER_HOME", self.current_link()),
+            ("PUB_CACHE", self.current_link().join("pub-cache")),
+        ]
     }
 
     fn package_manager_binary(&self) -> Option<&'static str> {
