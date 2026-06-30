@@ -4,11 +4,12 @@ use semver::VersionReq;
 
 use crate::commands;
 use crate::commands::output;
-use crate::config;
-use crate::language;
-use crate::language::LanguageRegistry;
+use lvm::core::config;
+use lvm::core::lvmrc;
+use lvm::language;
+use lvm::language::LanguageRegistry;
 
-pub(crate) fn is_version_like(s: &str) -> bool {
+fn is_version_like(s: &str) -> bool {
     let s = s.trim();
     if s.is_empty() {
         return false;
@@ -25,14 +26,14 @@ pub(crate) fn is_version_like(s: &str) -> bool {
 }
 
 /// 从 clap 匹配中提取必需参数
-pub(crate) fn req_arg<'a>(sub: &'a ArgMatches, name: &str) -> Result<&'a str> {
+fn req_arg<'a>(sub: &'a ArgMatches, name: &str) -> Result<&'a str> {
     sub.get_one::<String>(name)
         .map(String::as_str)
         .with_context(|| format!("Missing required argument: {name}"))
 }
 
 /// 解析 install/use 的 language 和 version 参数
-pub(crate) fn resolve_install_args(
+fn resolve_install_args(
     arg_lang: Option<&str>,
     arg_ver: Option<&str>,
     registry: &LanguageRegistry,
@@ -54,15 +55,15 @@ pub(crate) fn resolve_install_args(
         (Some(lang), None) => Ok(vec![(lang.to_string(), None)]),
         (Some(lang), Some(ver)) => Ok(vec![(lang.to_string(), Some(ver.to_string()))]),
         (None, _) => {
-            if let Some(path) = config::find_lvmrc() {
-                let map = config::parse_lvmrc(&path)?;
+            if let Some(path) = lvmrc::find_lvmrc() {
+                let map = lvmrc::parse_lvmrc(&path)?;
                 let vec: Vec<_> = map.into_iter().map(|(k, v)| (k, Some(v))).collect();
                 if vec.is_empty() {
                     bail!(".lvmrc exists but contains no language-version mappings");
                 }
                 return Ok(vec);
             }
-            if let Some(ver) = crate::language::node::read_nvmrc()?
+            if let Some(ver) = lvm::language::node::read_nvmrc()?
                 && !ver.is_empty()
             {
                 return Ok(vec![("node".to_string(), Some(ver))]);
@@ -231,7 +232,7 @@ pub(crate) fn execute(
 }
 
 /// 将当前版本写入 .lvmrc，返回要打印的消息
-pub(crate) fn write_save(
+fn write_save(
     registry: &LanguageRegistry,
     plan: Option<&(String, Option<String>)>,
 ) -> Result<Option<String>> {
@@ -239,7 +240,7 @@ pub(crate) fn write_save(
         && let Some(language) = registry.get(lang)
         && let Some(cur) = language.current_version()?
     {
-        config::write_lvmrc(lang, &cur)?;
+        lvmrc::write_lvmrc(lang, &cur)?;
         return Ok(Some(format!("Wrote {lang}={cur} to .lvmrc")));
     }
     Ok(None)

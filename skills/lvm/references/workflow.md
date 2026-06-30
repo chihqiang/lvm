@@ -80,7 +80,7 @@ dispatch.rs → 没有 language/version 参数
 当没有指定版本时（`lvm use node`），优先级：
 
 1. `.nvmrc`（仅 Node，`node/nvmrc.rs`）
-2. `.lvmrc`（所有语言通用，`config::read_lvmrc_version()`）
+2. `.lvmrc`（所有语言通用，`lvmrc::read_lvmrc_version()`）
 3. `default` 别名（`lvm alias node default 20`）
 4. 远程最新版本
 

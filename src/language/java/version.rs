@@ -7,9 +7,7 @@ use crate::language;
 use super::config::{java_mirror, java_versions_cache_filename, target_arch, target_os};
 
 pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
-    let cache_file = config::cache_dir()
-        .unwrap_or_else(|_| config::default_cache_dir())
-        .join(java_versions_cache_filename());
+    let cache_file = config::cache_path(java_versions_cache_filename());
 
     let text = language::fetch_with_cache(&cache_file, || {
         let majors = fetch_available_majors()?;

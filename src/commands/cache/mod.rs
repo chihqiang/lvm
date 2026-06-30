@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::config;
+use lvm::core::config;
 
 use crate::commands::output;
 use anyhow::{Context, Result};

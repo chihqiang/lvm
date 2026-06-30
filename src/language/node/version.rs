@@ -81,12 +81,11 @@ impl NodeLanguage {
             let version = Self::version_from_url(v)?;
             return Ok((v.to_string(), version, true));
         }
-        if v.starts_with(config::lts_prefix()) {
-            let desc = &v[config::lts_prefix().len()..];
+        if let Some(desc) = v.strip_prefix(config::LTS_PREFIX) {
             let resolved = lts::resolve_lts(desc)?;
             return Ok((Self::download_url(&resolved), resolved, false));
         }
-        if v == config::system_version_keyword() {
+        if v == config::SYSTEM_VERSION_KEYWORD {
             bail!("Use 'lvm use system' instead of 'lvm install system'");
         }
         let candidate = v.trim_start_matches('v');
@@ -104,8 +103,6 @@ impl NodeLanguage {
 }
 
 pub(crate) fn fetch_index_tab() -> Result<String> {
-    let cache_file = config::cache_dir()
-        .unwrap_or_else(|_| config::default_cache_dir())
-        .join(node_versions_cache_filename());
+    let cache_file = config::cache_path(node_versions_cache_filename());
     language::fetch_with_cache(&cache_file, || NodeLanguage::fetch_text(index_tab_path()))
 }

@@ -4,42 +4,42 @@ use std::fs;
 /// config 常量函数测试
 #[test]
 fn test_bin_dir_name() {
-    assert_eq!(lvm::core::config::bin_dir_name(), "bin");
+    assert_eq!(lvm::core::config::BIN_DIR, "bin");
 }
 
 #[test]
 fn test_current_dir_name() {
-    assert_eq!(lvm::core::config::current_dir_name(), "current");
+    assert_eq!(lvm::core::config::CURRENT_DIR, "current");
 }
 
 #[test]
 fn test_aliases_dir_name() {
-    assert_eq!(lvm::core::config::aliases_dir_name(), "aliases");
+    assert_eq!(lvm::core::config::ALIASES_DIR, "aliases");
 }
 
 #[test]
 fn test_system_version_keyword() {
-    assert_eq!(lvm::core::config::system_version_keyword(), "system");
+    assert_eq!(lvm::core::config::SYSTEM_VERSION_KEYWORD, "system");
 }
 
 #[test]
 fn test_lts_prefix() {
-    assert_eq!(lvm::core::config::lts_prefix(), "lts/");
+    assert_eq!(lvm::core::config::LTS_PREFIX, "lts/");
 }
 
 #[test]
 fn test_list_separator() {
-    assert_eq!(lvm::core::config::list_separator(), ", ");
+    assert_eq!(lvm::core::config::LIST_SEPARATOR, ", ");
 }
 
 #[test]
 fn test_max_lvmrc_depth() {
-    assert_eq!(lvm::core::config::max_lvmrc_depth(), 100);
+    assert_eq!(lvm::core::config::MAX_LVM_DEPTH, 100);
 }
 
 #[test]
 fn test_lvmrc_filename() {
-    assert_eq!(lvm::core::config::lvmrc_filename(), ".lvmrc");
+    assert_eq!(lvm::core::config::LVM_FILENAME, ".lvmrc");
 }
 
 /// parse_lvmrc 测试
@@ -48,7 +48,7 @@ fn test_parse_lvmrc_valid() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join(".lvmrc");
     fs::write(&path, "node=22.0.0\ngo=1.22.3\n").unwrap();
-    let map = lvm::core::config::parse_lvmrc(&path).unwrap();
+    let map = lvm::core::lvmrc::parse_lvmrc(&path).unwrap();
     assert_eq!(map.get("node").unwrap(), "22.0.0");
     assert_eq!(map.get("go").unwrap(), "1.22.3");
 }
@@ -62,7 +62,7 @@ fn test_parse_lvmrc_with_comments_and_blanks() {
         "# comment\n\nnode=20.14.0\n  # indented\n\ngo=1.21.0\n",
     )
     .unwrap();
-    let map = lvm::core::config::parse_lvmrc(&path).unwrap();
+    let map = lvm::core::lvmrc::parse_lvmrc(&path).unwrap();
     assert_eq!(map.get("node").unwrap(), "20.14.0");
     assert_eq!(map.get("go").unwrap(), "1.21.0");
 }
@@ -72,7 +72,7 @@ fn test_parse_lvmrc_empty_key() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join(".lvmrc");
     fs::write(&path, "=22.0.0\n").unwrap();
-    let result = lvm::core::config::parse_lvmrc(&path);
+    let result = lvm::core::lvmrc::parse_lvmrc(&path);
     assert!(result.is_err());
 }
 
@@ -81,7 +81,7 @@ fn test_parse_lvmrc_invalid_format() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join(".lvmrc");
     fs::write(&path, "invalid-line\n").unwrap();
-    let result = lvm::core::config::parse_lvmrc(&path);
+    let result = lvm::core::lvmrc::parse_lvmrc(&path);
     assert!(result.is_err());
 }
 
@@ -90,7 +90,7 @@ fn test_parse_lvmrc_empty_value() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join(".lvmrc");
     fs::write(&path, "node=\n").unwrap();
-    let result = lvm::core::config::parse_lvmrc(&path);
+    let result = lvm::core::lvmrc::parse_lvmrc(&path);
     assert!(result.is_err());
 }
 
@@ -104,30 +104,27 @@ fn test_alias_crud() {
     unsafe { std::env::set_var("HOME", dir.path().as_os_str().to_str().unwrap()) };
 
     // set
-    lvm::core::config::set_alias("node", "stable", "22.0.0").unwrap();
-    lvm::core::config::set_alias("node", "default", "22").unwrap();
+    lvm::core::alias::set_alias("node", "stable", "22.0.0").unwrap();
+    lvm::core::alias::set_alias("node", "default", "22").unwrap();
 
     // get
     assert_eq!(
-        lvm::core::config::get_alias("node", "stable").unwrap(),
+        lvm::core::alias::get_alias("node", "stable").unwrap(),
         Some("22.0.0".to_string())
     );
     assert_eq!(
-        lvm::core::config::get_alias("node", "nonexistent").unwrap(),
+        lvm::core::alias::get_alias("node", "nonexistent").unwrap(),
         None
     );
 
     // list
-    let names = lvm::core::config::list_alias_names("node").unwrap();
+    let names = lvm::core::alias::list_alias_names("node").unwrap();
     assert!(names.contains(&"default".to_string()));
     assert!(names.contains(&"stable".to_string()));
 
     // remove
-    lvm::core::config::remove_alias("node", "stable").unwrap();
-    assert_eq!(
-        lvm::core::config::get_alias("node", "stable").unwrap(),
-        None
-    );
+    lvm::core::alias::remove_alias("node", "stable").unwrap();
+    assert_eq!(lvm::core::alias::get_alias("node", "stable").unwrap(), None);
 }
 
 /// set_default_version / get_default_version 测试
@@ -139,15 +136,15 @@ fn test_default_version() {
     fs::create_dir_all(&home).unwrap();
     unsafe { std::env::set_var("HOME", dir.path().as_os_str().to_str().unwrap()) };
 
-    lvm::core::config::set_default_version("go", "1.22.0").unwrap();
+    lvm::core::alias::set_default_version("go", "1.22.0").unwrap();
     assert_eq!(
-        lvm::core::config::get_default_version("go").unwrap(),
+        lvm::core::alias::get_default_version("go").unwrap(),
         Some("1.22.0".to_string())
     );
 
     // no default yet
     assert_eq!(
-        lvm::core::config::get_default_version("python").unwrap(),
+        lvm::core::alias::get_default_version("python").unwrap(),
         None
     );
 }
@@ -160,8 +157,8 @@ fn test_write_and_read_lvmrc() {
     let cwd = std::env::current_dir().unwrap();
     std::env::set_current_dir(dir.path()).unwrap();
 
-    lvm::core::config::write_lvmrc("node", "22.0.0").unwrap();
-    let result = lvm::core::config::read_lvmrc_version("node").unwrap();
+    lvm::core::lvmrc::write_lvmrc("node", "22.0.0").unwrap();
+    let result = lvm::core::lvmrc::read_lvmrc_version("node").unwrap();
 
     std::env::set_current_dir(cwd).unwrap();
     assert_eq!(result, Some("22.0.0".to_string()));
@@ -174,11 +171,11 @@ fn test_write_lvmrc_update_existing() {
     let cwd = std::env::current_dir().unwrap();
     std::env::set_current_dir(dir.path()).unwrap();
 
-    lvm::core::config::write_lvmrc("node", "20.0.0").unwrap();
-    lvm::core::config::write_lvmrc("go", "1.22.0").unwrap();
-    lvm::core::config::write_lvmrc("node", "22.0.0").unwrap();
+    lvm::core::lvmrc::write_lvmrc("node", "20.0.0").unwrap();
+    lvm::core::lvmrc::write_lvmrc("go", "1.22.0").unwrap();
+    lvm::core::lvmrc::write_lvmrc("node", "22.0.0").unwrap();
 
-    let map = lvm::core::config::parse_lvmrc(&dir.path().join(".lvmrc")).unwrap();
+    let map = lvm::core::lvmrc::parse_lvmrc(&dir.path().join(".lvmrc")).unwrap();
     assert_eq!(map.get("node").unwrap(), "22.0.0");
     assert_eq!(map.get("go").unwrap(), "1.22.0");
 
@@ -189,8 +186,8 @@ fn test_write_lvmrc_update_existing() {
 /// 颜色/显示函数测试
 #[test]
 fn test_display_functions() {
-    assert!(lvm::core::config::use_color() || !lvm::core::config::use_color());
-    assert!(lvm::core::config::colored_check_mark().contains('\u{2713}'));
-    assert_eq!(lvm::core::config::lts_marker(), "(LTS:");
-    assert_eq!(lvm::core::config::installed_check_mark(), "\u{2713}");
+    assert!(lvm::core::display::use_color() || !lvm::core::display::use_color());
+    assert!(lvm::core::display::colored_check_mark().contains('\u{2713}'));
+    assert_eq!(lvm::core::display::LTS_MARKER, "(LTS:");
+    assert_eq!(lvm::core::display::INSTALLED_CHECK_MARK, "\u{2713}");
 }

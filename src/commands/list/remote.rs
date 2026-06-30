@@ -1,9 +1,9 @@
-use crate::language::LanguageRegistry;
+use lvm::language::LanguageRegistry;
 use std::collections::HashSet;
 
 use crate::commands::{get_language, output};
-use crate::config;
 use anyhow::Result;
+use lvm::core::display;
 
 fn extract_version(s: &str) -> &str {
     s.split_whitespace().next().unwrap_or(s)
@@ -21,8 +21,8 @@ pub(crate) fn list_remote(
     let installed_versions: HashSet<&str> =
         installed.iter().map(std::string::String::as_str).collect();
 
-    let lts_marker = config::lts_marker();
-    let use_color = config::use_color();
+    let lts_marker = display::LTS_MARKER;
+    let use_color = display::use_color();
 
     let mut count = 0u32;
     for version in remote_versions
@@ -35,26 +35,26 @@ pub(crate) fn list_remote(
         let is_lts = version.contains(lts_marker);
         if use_color {
             let color = if is_installed {
-                config::color_green()
+                display::COLOR_GREEN
             } else if is_lts {
-                config::color_cyan()
+                display::COLOR_CYAN
             } else {
                 ""
             };
             let reset = if is_installed || is_lts {
-                config::color_reset()
+                display::COLOR_RESET
             } else {
                 ""
             };
             let check = if is_installed {
-                format!(" {}", config::colored_check_mark())
+                format!(" {}", display::colored_check_mark())
             } else {
                 String::new()
             };
             println!("{color}{version}{check}{reset}");
         } else {
             let check = if is_installed {
-                format!(" {}", config::installed_check_mark())
+                format!(" {}", display::INSTALLED_CHECK_MARK)
             } else {
                 String::new()
             };

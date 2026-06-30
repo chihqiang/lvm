@@ -1,11 +1,12 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::config;
+use crate::core::alias;
+use crate::core::config;
+use crate::core::fslink;
+use crate::core::report::report;
+use crate::core::version::compare_versions;
 use anyhow::{Context, Result, bail};
-use lvm::core::fslink;
-use lvm::core::report::report;
-use lvm::core::version::compare_versions;
 
 pub trait Language {
     fn name(&self) -> &str;
@@ -43,14 +44,14 @@ pub trait Language {
     fn current_link(&self) -> PathBuf {
         config::lvm_home()
             .expect("LVM home directory is required")
-            .join(config::current_dir_name())
+            .join(config::CURRENT_DIR)
             .join(self.subdir_name())
     }
 
     fn bin_link(&self) -> PathBuf {
         config::lvm_home()
             .expect("LVM home directory is required")
-            .join(config::bin_dir_name())
+            .join(config::BIN_DIR)
             .join(format!(
                 "{}{}",
                 self.binary_name(),
@@ -66,7 +67,7 @@ pub trait Language {
 
     fn is_installed(&self, version_dir: &Path) -> bool {
         version_dir
-            .join(config::bin_dir_name())
+            .join(config::BIN_DIR)
             .join(format!(
                 "{}{}",
                 self.binary_name(),
@@ -106,7 +107,6 @@ pub trait Language {
     }
 
     fn use_version(&self, version: &str, set_default: bool) -> Result<()> {
-        let version = self.strip_version_prefix(version);
         let version_dir = self.version_dir(version);
 
         if !self.is_installed(&version_dir) {
@@ -123,7 +123,7 @@ pub trait Language {
         self.post_switch(version)?;
 
         if set_default {
-            config::set_default_version(self.name(), version)
+            alias::set_default_version(self.name(), version)
                 .context("Failed to write default config")?;
         }
 
@@ -173,7 +173,7 @@ pub trait Language {
         Ok(fslink::format_installed_versions(
             self.version_prefix(),
             self.current_version()?.as_deref(),
-            config::get_default_version(self.name())?.as_deref(),
+            alias::get_default_version(self.name())?.as_deref(),
             versions,
         ))
     }
@@ -207,7 +207,7 @@ pub trait Language {
     fn binary_path(&self, version: &str) -> Result<String> {
         let version = self.strip_version_prefix(version);
         let version_dir = self.version_dir(version);
-        let bin = version_dir.join(config::bin_dir_name()).join(format!(
+        let bin = version_dir.join(config::BIN_DIR).join(format!(
             "{}{}",
             self.binary_name(),
             std::env::consts::EXE_SUFFIX

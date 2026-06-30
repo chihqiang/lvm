@@ -1,4 +1,6 @@
 use anyhow::{Context, Result};
+use quick_xml::de::from_str;
+use serde::Deserialize;
 
 use crate::config;
 use crate::language;
@@ -7,11 +9,26 @@ use super::config::{
     dart_latest_version_cache_filename, dart_mirror, dart_versions_cache_filename,
 };
 
+#[derive(Debug, Deserialize)]
+#[serde(rename = "ListBucketResult")]
+struct S3ListResult {
+    #[serde(rename = "Contents", default)]
+    contents: Vec<S3Contents>,
+    #[serde(rename = "IsTruncated")]
+    is_truncated: bool,
+    #[serde(rename = "NextContinuationToken")]
+    next_continuation_token: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct S3Contents {
+    #[serde(rename = "Key")]
+    key: String,
+}
+
 impl super::DartLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
-        let cache_file = config::cache_dir()
-            .unwrap_or_else(|_| config::default_cache_dir())
-            .join(dart_latest_version_cache_filename());
+        let cache_file = config::cache_path(dart_latest_version_cache_filename());
 
         let text = language::fetch_with_cache(&cache_file, || {
             let url = format!("{}/channels/stable/release/latest/VERSION", dart_mirror());
@@ -30,9 +47,7 @@ impl super::DartLanguage {
     }
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
-        let cache_file = config::cache_dir()
-            .unwrap_or_else(|_| config::default_cache_dir())
-            .join(dart_versions_cache_filename());
+        let cache_file = config::cache_path(dart_versions_cache_filename());
 
         let text = language::fetch_with_cache(&cache_file, Self::fetch_s3_listing)?;
 
@@ -67,13 +82,11 @@ impl super::DartLanguage {
             let response = req.call().context("Failed to fetch Dart releases")?;
             let xml = response.into_string().context("Failed to read response")?;
 
-            for (start, _) in xml.match_indices("<Key>") {
-                let key_start = start + "<Key>".len();
-                let rest = &xml[key_start..];
-                let key_end = rest.find('<').unwrap_or(rest.len());
-                let key = &rest[..key_end];
+            let result: S3ListResult = from_str(&xml).context("Failed to parse S3 listing XML")?;
 
-                if let Some(ver_str) = key
+            for entry in &result.contents {
+                if let Some(ver_str) = entry
+                    .key
                     .strip_prefix("channels/stable/release/")
                     .and_then(|s| s.split('/').next())
                     && let Ok(ver) = semver::Version::parse(ver_str)
@@ -83,13 +96,13 @@ impl super::DartLanguage {
                 }
             }
 
-            if !xml.contains("<IsTruncated>true</IsTruncated>") {
+            if !result.is_truncated {
                 break;
             }
 
-            token = extract_next_continuation_token(&xml);
-            if token.is_none() {
-                break;
+            match result.next_continuation_token {
+                Some(t) if !t.is_empty() => token = Some(t),
+                _ => break,
             }
         }
 
@@ -102,18 +115,5 @@ impl super::DartLanguage {
             buf.push('\n');
         }
         Ok(buf)
-    }
-}
-
-fn extract_next_continuation_token(xml: &str) -> Option<String> {
-    let marker = "<NextContinuationToken>";
-    let start = xml.find(marker)?;
-    let value_start = start + marker.len();
-    let end = xml[value_start..].find("</NextContinuationToken>")?;
-    let token = &xml[value_start..value_start + end];
-    if token.is_empty() {
-        None
-    } else {
-        Some(token.to_string())
     }
 }

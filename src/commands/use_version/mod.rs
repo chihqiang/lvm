@@ -1,5 +1,7 @@
-use crate::config;
-use crate::language::{self, LanguageRegistry};
+use lvm::core::alias;
+use lvm::core::config;
+use lvm::core::lvmrc;
+use lvm::language::{self, LanguageRegistry};
 
 use crate::commands::{flush, get_language, output};
 use anyhow::{Context, Result};
@@ -16,13 +18,13 @@ pub(crate) fn use_version(
         Some(v) => v.to_string(),
         None => {
             if language == "node"
-                && let Some(v) = crate::language::node::read_nvmrc()?
+                && let Some(v) = lvm::language::node::read_nvmrc()?
                 && !v.is_empty()
             {
                 v
-            } else if let Some(v) = config::read_lvmrc_version(language)? {
+            } else if let Some(v) = lvmrc::read_lvmrc_version(language)? {
                 v
-            } else if let Some(v) = config::get_default_version(language)? {
+            } else if let Some(v) = alias::get_default_version(language)? {
                 v
             } else {
                 let latest = p.latest_version()?;
@@ -32,7 +34,7 @@ pub(crate) fn use_version(
         }
     };
 
-    if version == config::system_version_keyword() {
+    if version == config::SYSTEM_VERSION_KEYWORD {
         language::remove_symlink(&p.current_link())
             .with_context(|| format!("Failed to remove {}", p.current_link().display()))?;
         language::remove_symlink(&p.bin_link())

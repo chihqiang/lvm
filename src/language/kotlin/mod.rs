@@ -45,13 +45,13 @@ impl Language for KotlinLanguage {
     }
 
     fn is_installed(&self, version_dir: &Path) -> bool {
-        let bin = crate::config::bin_dir_name();
+        let bin = crate::config::BIN_DIR;
         version_dir.join(bin).join("kotlinc").exists()
             || version_dir.join(bin).join("kotlinc.bat").exists()
     }
 
     fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
-        vec![self.current_link().join(crate::config::bin_dir_name())]
+        vec![self.current_link().join(crate::config::BIN_DIR)]
     }
 
     fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
@@ -72,7 +72,7 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
         None => KotlinLanguage::fetch_latest_version(),
         Some(v) => {
             let v = v.trim();
-            if v == crate::config::system_version_keyword() {
+            if v == crate::config::SYSTEM_VERSION_KEYWORD {
                 bail!("'system' is not supported for Kotlin");
             }
             let candidate = v.trim_start_matches('v');
