@@ -54,7 +54,7 @@ flutter=3.29.0
 
 ## 镜像源配置模式
 
-所有语言镜像源使用同一模式（`src/core/config.rs` 中的 `OnceLock`）：
+所有语言镜像源使用同一模式（各语言 `config.rs` 中的 `OnceLock`）：
 
 ```rust
 static MIRROR: OnceLock<String> = OnceLock::new();

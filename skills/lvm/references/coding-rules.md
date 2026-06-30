@@ -3,9 +3,9 @@
 ## 配置集中原则
 
 - **不要硬编码语言特定值** — 每个语言的镜像源、OS/arch 映射、URL 格式、缓存文件名放在语言模块的 `config.rs` 中
-- **公共配置集中管理** — 所有跨语言共享的常量（路径名 `"bin"`、`"current"`、`"system"` 关键字、`"lts/"` 前缀、超时、颜色、`.lvmrc` 文件名等）统一放在 `src/core/config.rs` 的函数中
+- **公共配置集中管理** — 所有跨语言共享的常量（路径名 `"bin"`、`"current"`、`"system"` 关键字、`"lts/"` 前缀、超时等）统一放在 `src/core/config.rs` 中；颜色放在 `display.rs`；别名放在 `alias.rs`；`.lvmrc` 放在 `lvmrc.rs`
 - **公共报告消息集中管理** — 通用报告（`report_already_installed`、`report_fallback` 等）放在 `src/core/report.rs`，语言特有的消息在语言模块内用 `report(format!(...))` 直接输出
-- **禁止在语言模块中直接写 `"bin"`、`"current"`、`"system"`、`"lts/"` 等字符串字面量** — 通过 `crate::config::bin_dir_name()`、`config::system_version_keyword()` 等函数引用
+- **禁止在语言模块中直接写 `"bin"`、`"current"`、`"system"`、`"lts/"` 等字符串字面量** — 通过 `crate::config::BIN_DIR`、`config::SYSTEM_VERSION_KEYWORD` 等 const 引用
 
 ## 代码风格
 
@@ -15,7 +15,7 @@
 - **命名**: Rust 标准命名法 — struct 用 PascalCase，函数/变量用 snake_case，常量用 SCREAMING_SNAKE_CASE
 - **不要用 derive** — 不使用 `#[derive(Deserialize)]`，只使用 `serde_json::Value` 手写解析
 - **代码不要过于抽象** — 各语言模块可以有一定重复，优先可读性
-- **path 字面量集中管理**: 所有 `"bin"`, `"current"`, `"system"`, `"lts/"` 等字符串必须使用 `core/config.rs` 中的函数
+- **path 字面量集中管理**: 所有 `"bin"`, `"current"`, `"system"`, `"lts/"` 等字符串必须使用 `core/config.rs` 中的 pub const
 - **report 消息集中管理**: 所有通用报告消息使用 `core/report.rs` 中的预定义函数
 
 ## CLI 规范

@@ -5,12 +5,14 @@ src/
 ├── main.rs              # 入口，注册所有语言，启动 CLI
 ├── core/                # 核心基础设施（与语言无关）
 │   ├── mod.rs           # 重导出全部 pub(crate) 符号
-│   ├── config.rs        # 路径、超时、颜色、别名、.lvmrc 等
-│   ├── download.rs      # 下载 + 缓存 + 安装流程
-│   ├── extract.rs       # 解压 .tar.gz / .zip（自动 strip 顶层目录）
-│   ├── http.rs          # HTTP 请求（ureq）
+│   ├── alias.rs         # 别名 CRUD、default 版本
 │   ├── checksum.rs      # SHA256 校验
+│   ├── config.rs        # 基础常量（路径名、超时、关键字）+ 路径函数
+│   ├── display.rs       # 颜色代码、LTS 标记、勾号
+│   ├── extract.rs       # 解压 .tar.gz / .zip（自动 strip 顶层目录）
 │   ├── fslink.rs        # 符号链接管理、archive_ext、exe_suffix
+│   ├── http.rs          # HTTP 请求 + 下载 + 缓存 + 安装流程
+│   ├── lvmrc.rs         # .lvmrc 读写、向上遍历查找
 │   ├── report.rs        # 报告消息缓冲系统（先收集后 flush）
 │   └── version.rs       # 版本排序、模糊匹配
 ├── commands/            # CLI 子命令实现
@@ -35,10 +37,12 @@ src/
 
 每个模块负责单一职责，语言无关：
 
-- **`config.rs`**: 路径（`lvm_home`, `bin_dir_name`, `current_dir_name`）、超时、颜色、别名读写、`.lvmrc` 解析/写入
-- **`download.rs`**: 下载进度条、断点续传、离线模式、`download_and_install`（下载→解压→重命名→清理）
+- **`alias.rs`**: 别名 CRUD（`set_alias`、`get_alias`、`remove_alias`）、`set_default_version` / `get_default_version`
+- **`config.rs`**: 基础常量（`BIN_DIR`、`CURRENT_DIR`、`SYSTEM_VERSION_KEYWORD`、`LTS_PREFIX`、超时等）和路径函数（`lvm_home`、`downloads_dir`、`cache_path` 等）
+- **`display.rs`**: 颜色代码常量、`LTS_MARKER`、`INSTALLED_CHECK_MARK`、`colored_check_mark()`、`use_color()`
 - **`extract.rs`**: 自动检测 zip/tar.gz，`strip_top_level` 去掉 archive 顶层目录
-- **`http.rs`**: 基于 ureq 的 HTTP 请求封装、离线模式开关
+- **`http.rs`**: 基于 ureq 的 HTTP 请求封装 + 下载进度条、断点续传、离线模式、缓存 + 安装流程（`download`、`download_and_install`、`fetch_with_cache`、`fetch_from_mirror`）
+- **`lvmrc.rs`**: `.lvmrc` 解析/写入、`find_rc_file` 向上遍历查找
 - **`checksum.rs`**: SHA256 文件校验
 - **`fslink.rs`**: 原子替换式 symlink 管理、`archive_ext`/`exe_suffix`/`path_separator`
 - **`report.rs`**: 全局缓冲 Vec + 延迟 flush，预定义报告函数

@@ -9,7 +9,7 @@ use lvm::core::lvmrc;
 use lvm::language;
 use lvm::language::LanguageRegistry;
 
-pub(crate) fn is_version_like(s: &str) -> bool {
+fn is_version_like(s: &str) -> bool {
     let s = s.trim();
     if s.is_empty() {
         return false;
@@ -26,14 +26,14 @@ pub(crate) fn is_version_like(s: &str) -> bool {
 }
 
 /// 从 clap 匹配中提取必需参数
-pub(crate) fn req_arg<'a>(sub: &'a ArgMatches, name: &str) -> Result<&'a str> {
+fn req_arg<'a>(sub: &'a ArgMatches, name: &str) -> Result<&'a str> {
     sub.get_one::<String>(name)
         .map(String::as_str)
         .with_context(|| format!("Missing required argument: {name}"))
 }
 
 /// 解析 install/use 的 language 和 version 参数
-pub(crate) fn resolve_install_args(
+fn resolve_install_args(
     arg_lang: Option<&str>,
     arg_ver: Option<&str>,
     registry: &LanguageRegistry,
@@ -232,7 +232,7 @@ pub(crate) fn execute(
 }
 
 /// 将当前版本写入 .lvmrc，返回要打印的消息
-pub(crate) fn write_save(
+fn write_save(
     registry: &LanguageRegistry,
     plan: Option<&(String, Option<String>)>,
 ) -> Result<Option<String>> {
