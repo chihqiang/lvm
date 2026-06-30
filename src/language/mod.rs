@@ -2,6 +2,7 @@ pub mod dart;
 pub mod flutter;
 pub mod go;
 pub mod java;
+pub mod kotlin;
 pub mod node;
 pub mod python;
 

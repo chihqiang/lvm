@@ -1,6 +1,6 @@
 # lvm
 
-A multi-runtime version manager written in Rust. Cross-platform single binary, unified management of **Node.js, Go, Java, Python, Dart, and Flutter** versions, supports global/project automatic switching, built-in mirror acceleration, and environment isolation with no system pollution.
+A multi-runtime version manager written in Rust. Cross-platform single binary, unified management of **Node.js, Go, Java, Python, Dart, Flutter, and Kotlin** versions, supports global/project automatic switching, built-in mirror acceleration, and environment isolation with no system pollution.
 
 [![Check](https://github.com/chihqiang/lvm/actions/workflows/check.yml/badge.svg)](https://github.com/chihqiang/lvm/actions/workflows/check.yml)
 [![HitCount](https://views.whatilearened.today/views/github/chihqiang/lvm.svg)](https://github.com/chihqiang/lvm)
@@ -161,6 +161,26 @@ lvm use flutter 3.29
 lvm current flutter
 ```
 
+### Kotlin
+
+```bash
+# List installable versions
+lvm list-remote kotlin
+
+# Install a specific version
+lvm install kotlin 2.4
+lvm install kotlin 1.9.25
+
+# List installed versions
+lvm list kotlin
+
+# Switch version
+lvm use kotlin 2.4
+
+# Show current version
+lvm current kotlin
+```
+
 ## Commands
 
 | Command | Description |
@@ -176,7 +196,7 @@ lvm current flutter
 | `lvm alias <language> <name> <version>` | Set an alias (version supports semver, `system`, `lts/*`, semver ranges) |
 | `lvm unalias <language> <name>` | Delete an alias |
 | `lvm which <language> [version]` | Show the binary path for a version (defaults to current) |
-| `lvm env` | Output shell environment variable setup script (LVM_HOME, GOPATH, FLUTTER_HOME, PATH) |
+| `lvm env` | Output shell environment variable setup script (LVM_HOME, GOPATH, KOTLIN_HOME, FLUTTER_HOME, PUB_CACHE, PATH) |
 | `lvm env --shell <bash\|zsh\|fish>` | Output shell completion script |
 | `lvm hook [--shell bash\|zsh\|fish\|powershell]` | Output shell auto-switch hook (bash: `PROMPT_COMMAND`, zsh: `chpwd`, fish: `--on-variable PWD`, powershell: `prompt`) |
 | `lvm prune <language> [--keep N]` | Remove all but N newest versions (skips current/default). Default keep=3 |
@@ -256,7 +276,7 @@ eslint
 
 ## Features
 
-- **Multi-language**: Node.js, Go, Java, Python, Dart, and Flutter — plugin-based architecture for easy extension
+- **Multi-language**: Node.js, Go, Java, Python, Dart, Flutter, and Kotlin — plugin-based architecture for easy extension
 - **Mirror acceleration**: Each language supports a configurable mirror source via `LVM_*_MIRROR` environment variables
 - **Architecture fallback**: Automatically falls back from `arm64` to `x64` when native builds are unavailable (Java 8 on Apple Silicon, older Node/Go versions, etc.)
 - **Security verification**: Automatically verifies SHA256 checksums after download
@@ -288,6 +308,9 @@ export LVM_DART_MIRROR=https://storage.googleapis.com/dart-archive
 
 # Flutter (defaults to https://storage.googleapis.com/flutter_infra_release/releases)
 export LVM_FLUTTER_MIRROR=https://storage.googleapis.com/flutter_infra_release/releases
+
+# Kotlin (defaults to https://github.com/JetBrains/kotlin/releases/download)
+export LVM_KOTLIN_MIRROR=https://github.com/JetBrains/kotlin/releases/download
 ```
 
 ## Shell Integration
@@ -299,31 +322,36 @@ eval "$(lvm env)"    # PATH and language-specific env vars
 eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 ```
 
-- **`lvm env`**: Outputs `LVM_HOME`, `GOPATH` (Go), `FLUTTER_HOME` (Flutter), and `PATH` environment variables. Windows outputs cmd.exe syntax.
+- **`lvm env`**: Outputs `LVM_HOME`, `GOPATH` (Go), `FLUTTER_HOME` (Flutter), `KOTLIN_HOME` (Kotlin), and `PATH` environment variables. Windows outputs cmd.exe syntax.
 - **`lvm hook`**: Outputs auto-switch script. Defaults to detecting the current shell; use `--shell` to override. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook, fish uses `--on-variable PWD`, powershell overrides the `prompt` function — automatically runs `lvm use` when entering a directory containing `.lvmrc` or `.nvmrc`. Not available on Windows (unless `--shell powershell` is explicitly given).
 - **`lvm env --shell bash|zsh|fish`**: Outputs command completion scripts.
 - **Node.js**: npm global packages are installed to the corresponding version directory; not shared after switching versions.
 - **Go**: `GOPATH` is automatically set to `$LVM_HOME/current/go/packages` (symlink dynamically points to the current version). Binaries installed via `go install` are isolated from the system and other versions.
-- **Java/Python/Dart/Flutter**: `JAVA_HOME` / `PYTHON_HOME` / `DART_HOME` / `FLUTTER_HOME` are automatically set to the active version directory when switching.
+- **Java/Python/Dart/Flutter/Kotlin**: `JAVA_HOME` / `PYTHON_HOME` / `DART_HOME` / `FLUTTER_HOME` / `KOTLIN_HOME` are automatically set to the active version directory when switching.
+- **Dart/Flutter**: `PUB_CACHE` is automatically set to the active version's `pub-cache` directory, isolating globally activated pub packages per version to prevent cross-version incompatibility.
 
 ## Storage Layout
 
 ```bash
 ~/.lvm/
 ├── bin/                  # Global symlinks (added to PATH)
-│   ├── node   -> current/node/bin/node
-│   ├── go     -> current/go/bin/go
-│   ├── java   -> current/java/bin/java
-│   ├── python -> current/python/bin/python3
-│   ├── dart   -> current/dart/bin/dart
-│   └── flutter -> current/flutter/bin/flutter
+│   ├── node     -> current/node/bin/node
+│   ├── go       -> current/go/bin/go
+│   ├── java     -> current/java/bin/java
+│   ├── python   -> current/python/bin/python3
+│   ├── dart     -> current/dart/bin/dart
+│   ├── flutter  -> current/flutter/bin/flutter
+│   └── kotlin   -> current/kotlin/bin/kotlin
 ├── current/
-│   ├── node    -> ../node/v22.0.0   # Current active Node version
-│   ├── go      -> ../go/v1.22.0     # Current active Go version
-│   ├── java    -> ../java/jdk-21.0.3
-│   ├── python  -> ../python/3.12.4
-│   ├── dart    -> ../dart/3.6.0
-│   └── flutter -> ../flutter/3.29.0
+│   ├── node     -> ../node/v22.0.0   # Current active Node version
+│   ├── go       -> ../go/v1.22.0     # Current active Go version
+│   ├── java     -> ../java/jdk-21.0.3
+│   ├── python   -> ../python/3.12.4
+│   ├── dart     -> ../dart/3.6.0
+│   │   └── pub-cache/                 # pub global packages (per-version)
+│   ├── flutter  -> ../flutter/3.29.0
+│   │   └── pub-cache/                 # pub global packages (per-version)
+│   └── kotlin   -> ../kotlin/2.0.0
 ├── node/                 # Installed Node.js versions
 │   ├── v20.18.0/         # npm install -g → lib/node_modules/ (per-version)
 │   └── v22.0.0/
@@ -338,8 +366,12 @@ eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 │   └── 3.12.4/
 ├── dart/                 # Installed Dart versions
 │   └── 3.6.0/
+│       └── pub-cache/    # pub global packages (per-version isolation)
 ├── flutter/              # Installed Flutter versions
 │   └── 3.29.0/
+│       └── pub-cache/    # pub global packages (per-version isolation)
+├── kotlin/               # Installed Kotlin compiler versions
+│   └── 2.0.0/
 ├── aliases/              # Alias configuration
 │   ├── node/
 │   │   └── default -> 22

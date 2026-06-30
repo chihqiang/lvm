@@ -1,6 +1,6 @@
 # lvm
 
-Rust 实现的多运行时版本管理工具，跨平台单二进制，统一管理 **Node.js、Go、Java、Python、Dart、Flutter** 六种运行时版本，支持全局 / 项目自动切换，内置镜像加速，环境隔离无系统污染。
+Rust 实现的多运行时版本管理工具，跨平台单二进制，统一管理 **Node.js、Go、Java、Python、Dart、Flutter、Kotlin** 七种运行时版本，支持全局 / 项目自动切换，内置镜像加速，环境隔离无系统污染。
 
 [![Check](https://github.com/chihqiang/lvm/actions/workflows/check.yml/badge.svg)](https://github.com/chihqiang/lvm/actions/workflows/check.yml)
 [![HitCount](https://views.whatilearened.today/views/github/chihqiang/lvm.svg)](https://github.com/chihqiang/lvm)
@@ -161,6 +161,26 @@ lvm use flutter 3.29
 lvm current flutter
 ```
 
+### Kotlin
+
+```bash
+# 查看可安装版本
+lvm list-remote kotlin
+
+# 安装指定版本
+lvm install kotlin 2.4
+lvm install kotlin 1.9.25
+
+# 列出已安装版本
+lvm list kotlin
+
+# 切换使用版本
+lvm use kotlin 2.4
+
+# 查看当前版本
+lvm current kotlin
+```
+
 ## Commands
 
 | Command | Description |
@@ -176,7 +196,7 @@ lvm current flutter
 | `lvm alias <language> <name> <version>` | 设置别名（version 支持 semver、`system`、`lts/*`、semver 范围） |
 | `lvm unalias <language> <name>` | 删除别名 |
 | `lvm which <language> [version]` | 显示指定版本二进制路径（默认当前） |
-| `lvm env` | 输出 shell 环境变量设置脚本（LVM_HOME、GOPATH、FLUTTER_HOME、PATH） |
+| `lvm env` | 输出 shell 环境变量设置脚本（LVM_HOME、GOPATH、KOTLIN_HOME、FLUTTER_HOME、PUB_CACHE、PATH） |
 | `lvm env --shell <bash\|zsh\|fish>` | 输出对应 shell 的补全脚本 |
 | `lvm hook [--shell bash\|zsh\|fish\|powershell]` | 输出 shell 自动切换 hook（bash: `PROMPT_COMMAND`，zsh: `chpwd`，fish: `--on-variable PWD`，powershell: `prompt`） |
 | `lvm prune <language> [--keep N]` | 删除旧版本，保留最新的 N 个（跳过 current/default）。默认 keep=3 |
@@ -256,7 +276,7 @@ eslint
 
 ## Features
 
-- **多语言**：Node.js、Go、Java、Python、Dart、Flutter，插件式架构易于扩展
+- **多语言**：Node.js、Go、Java、Python、Dart、Flutter、Kotlin，插件式架构易于扩展
 - **镜像加速**：每种语言均支持通过 `LVM_*_MIRROR` 环境变量配置镜像源
 - **架构回退**：当原生架构无可用构建时（如 Apple Silicon 上 Java 8、旧版 Node/Go 等），自动从 `arm64` 回退到 `x64`
 - **安全校验**：下载后自动验证 SHA256 校验和
@@ -288,6 +308,9 @@ export LVM_DART_MIRROR=https://storage.googleapis.com/dart-archive
 
 # Flutter（默认 https://storage.googleapis.com/flutter_infra_release/releases）
 export LVM_FLUTTER_MIRROR=https://storage.googleapis.com/flutter_infra_release/releases
+
+# Kotlin（默认 https://github.com/JetBrains/kotlin/releases/download）
+export LVM_KOTLIN_MIRROR=https://github.com/JetBrains/kotlin/releases/download
 ```
 
 ## Shell Integration
@@ -299,31 +322,36 @@ eval "$(lvm env)"    # PATH 和各语言环境变量
 eval "$(lvm hook)"   # .lvmrc / .nvmrc 自动切换 hook
 ```
 
-- **`lvm env`**：输出 `LVM_HOME`、`GOPATH`（Go）、`FLUTTER_HOME`（Flutter）、`PATH` 环境变量。Windows 输出 cmd.exe 语法。
+- **`lvm env`**：输出 `LVM_HOME`、`GOPATH`（Go）、`FLUTTER_HOME`（Flutter）、`KOTLIN_HOME`（Kotlin）、`PATH` 环境变量。Windows 输出 cmd.exe 语法。
 - **`lvm hook`**：输出自动切换脚本。默认自动检测当前 shell，可用 `--shell` 指定。bash 通过 `PROMPT_COMMAND`，zsh 通过 `chpwd` 钩子，fish 使用 `--on-variable PWD`，powershell 覆写 `prompt` 函数，进入含 `.lvmrc` 或 `.nvmrc` 的目录时自动执行 `lvm use`。Windows 上不可用（除非显式 `--shell powershell`）。
 - **`lvm env --shell bash|zsh|fish`**：输出命令补全脚本。
 - **Node.js**：npm 全局包安装到对应版本目录，切换版本后不共享。
 - **Go**：`GOPATH` 自动设为 `$LVM_HOME/current/go/packages`（符号链接动态指向当前版本），`go install` 安装的二进制与系统和其他版本隔离。
-- **Java/Python/Dart/Flutter**：切换版本时自动设置 `JAVA_HOME` / `PYTHON_HOME` / `DART_HOME` / `FLUTTER_HOME`。
+- **Java/Python/Dart/Flutter/Kotlin**：切换版本时自动设置 `JAVA_HOME` / `PYTHON_HOME` / `DART_HOME` / `FLUTTER_HOME` / `KOTLIN_HOME`。
+- **Dart/Flutter**：`PUB_CACHE` 自动设为当前版本的 `pub-cache` 目录，隔离不同版本的全局 pub 包，避免跨版本不兼容。
 
 ## Storage Layout
 
 ```bash
 ~/.lvm/
 ├── bin/                  # 全局符号链接（加入 PATH）
-│   ├── node   -> current/node/bin/node
-│   ├── go     -> current/go/bin/go
-│   ├── java   -> current/java/bin/java
-│   ├── python -> current/python/bin/python3
-│   ├── dart   -> current/dart/bin/dart
-│   └── flutter -> current/flutter/bin/flutter
+│   ├── node     -> current/node/bin/node
+│   ├── go       -> current/go/bin/go
+│   ├── java     -> current/java/bin/java
+│   ├── python   -> current/python/bin/python3
+│   ├── dart     -> current/dart/bin/dart
+│   ├── flutter  -> current/flutter/bin/flutter
+│   └── kotlin   -> current/kotlin/bin/kotlin
 ├── current/
-│   ├── node    -> ../node/v22.0.0   # 当前活动 Node 版本
-│   ├── go      -> ../go/v1.22.0     # 当前活动 Go 版本
-│   ├── java    -> ../java/jdk-21.0.3
-│   ├── python  -> ../python/3.12.4
-│   ├── dart    -> ../dart/3.6.0
-│   └── flutter -> ../flutter/3.29.0
+│   ├── node     -> ../node/v22.0.0   # 当前活动 Node 版本
+│   ├── go       -> ../go/v1.22.0     # 当前活动 Go 版本
+│   ├── java     -> ../java/jdk-21.0.3
+│   ├── python   -> ../python/3.12.4
+│   ├── dart     -> ../dart/3.6.0
+│   │   └── pub-cache/                 # pub 全局包（per-version）
+│   ├── flutter  -> ../flutter/3.29.0
+│   │   └── pub-cache/                 # pub 全局包（per-version）
+│   └── kotlin   -> ../kotlin/2.0.0
 ├── node/                 # 已安装的 Node.js 版本
 │   ├── v20.18.0/         # npm install -g → lib/node_modules/（per-version）
 │   └── v22.0.0/
@@ -338,8 +366,12 @@ eval "$(lvm hook)"   # .lvmrc / .nvmrc 自动切换 hook
 │   └── 3.12.4/
 ├── dart/                 # 已安装的 Dart 版本
 │   └── 3.6.0/
+│       └── pub-cache/    # pub 全局包（per-version 隔离）
 ├── flutter/              # 已安装的 Flutter 版本
 │   └── 3.29.0/
+│       └── pub-cache/    # pub 全局包（per-version 隔离）
+├── kotlin/               # 已安装的 Kotlin 编译器版本
+│   └── 2.0.0/
 ├── aliases/              # 别名配置
 │   ├── node/
 │   │   └── default -> 22
