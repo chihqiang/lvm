@@ -3,11 +3,10 @@ use lvm::core::config;
 use crate::commands::output;
 
 fn lvm_auto_function() -> (String, String) {
-    let lvm_bin = config::lvm_home().map_or_else(
-        |_| std::path::PathBuf::from("lvm"),
-        |p| p.join(config::BIN_DIR).join("lvm"),
-    );
-    let lvm_bin = lvm_bin.to_string_lossy().to_string();
+    let lvm_bin = std::env::current_exe()
+        .unwrap_or_else(|_| std::path::PathBuf::from("lvm"))
+        .to_string_lossy()
+        .to_string();
     let lvmrc = config::LVM_FILENAME.to_string();
     (lvm_bin, lvmrc)
 }
