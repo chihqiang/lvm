@@ -12,6 +12,7 @@ pub trait Language {
 
     // 以下有默认实现，可按需覆盖：
     fn version_prefix(&self) -> &'static str { "v" }
+    fn strip_version_prefix<'a>(&self, version: &'a str) -> &'a str;
     fn binary_name(&self) -> &str { self.name() }
     fn subdir_name(&self) -> &str { self.name() }
     fn list_remote_versions(&self) -> Result<Vec<String>>;
@@ -19,8 +20,10 @@ pub trait Language {
     fn env_extra_paths(&self) -> Vec<PathBuf>;
     fn env_extra_vars(&self) -> Vec<(&'static str, PathBuf)>;
     fn package_manager_binary(&self) -> Option<&'static str>;
+    fn packages_dir_name(&self) -> Option<&'static str>;
     fn post_install(&self, _version: &str) -> Result<()>;
     fn post_switch(&self, _version: &str) -> Result<()>;
+    fn rc_version(&self) -> Result<Option<String>>;  // RC 文件版本（Node 的 .nvmrc）
 }
 ```
 

@@ -8,7 +8,7 @@ use crate::core::report::report;
 use crate::core::version::compare_versions;
 use anyhow::{Context, Result, bail};
 
-pub trait Language {
+pub trait Language: Send + Sync {
     fn name(&self) -> &str;
 
     fn install(&self, version: Option<&str>) -> Result<String>;
@@ -37,20 +37,20 @@ pub trait Language {
 
     fn lvm_dir(&self) -> PathBuf {
         config::lvm_home()
-            .expect("LVM home directory is required")
+            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm"))
             .join(self.subdir_name())
     }
 
     fn current_link(&self) -> PathBuf {
         config::lvm_home()
-            .expect("LVM home directory is required")
+            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm"))
             .join(config::CURRENT_DIR)
             .join(self.subdir_name())
     }
 
     fn bin_link(&self) -> PathBuf {
         config::lvm_home()
-            .expect("LVM home directory is required")
+            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm"))
             .join(config::BIN_DIR)
             .join(format!(
                 "{}{}",
@@ -104,6 +104,10 @@ pub trait Language {
 
     fn packages_dir_name(&self) -> Option<&'static str> {
         None
+    }
+
+    fn rc_version(&self) -> Result<Option<String>> {
+        Ok(None)
     }
 
     fn use_version(&self, version: &str, set_default: bool) -> Result<()> {

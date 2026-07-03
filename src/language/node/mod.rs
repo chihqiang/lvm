@@ -13,7 +13,7 @@ use crate::core::http::get_url;
 use crate::language;
 
 pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
-pub use nvmrc::read_nvmrc;
+pub use nvmrc::{read_nvmrc, resolve_nvmrc_version};
 
 /// Node.js 语言
 pub struct NodeLanguage;
@@ -158,6 +158,13 @@ impl Language for NodeLanguage {
 
     fn packages_dir_name(&self) -> Option<&'static str> {
         Some("node_modules")
+    }
+
+    fn rc_version(&self) -> Result<Option<String>> {
+        match read_nvmrc()? {
+            Some(v) if !v.is_empty() => resolve_nvmrc_version(&v).map(Some),
+            _ => Ok(None),
+        }
     }
 
     fn post_install(&self, version: &str) -> Result<()> {

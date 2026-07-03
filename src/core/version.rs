@@ -1,15 +1,13 @@
 use semver::Version;
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow, bail};
 
 /// Parse a GitHub releases API JSON response and extract stable versions.
 /// Filters out draft and prerelease entries. Expects `tag_name` to contain
 /// a semver version string (with or without a leading `v`).
-pub fn parse_github_releases(json: &str) -> Vec<String> {
-    let root: Vec<serde_json::Value> = match serde_json::from_str(json) {
-        Ok(v) => v,
-        Err(_) => return vec![],
-    };
+pub fn parse_github_releases(json: &str) -> Result<Vec<String>> {
+    let root: Vec<serde_json::Value> =
+        serde_json::from_str(json).context("Failed to parse GitHub releases JSON")?;
 
     let mut versions: Vec<Version> = Vec::new();
     for release in &root {
@@ -38,7 +36,7 @@ pub fn parse_github_releases(json: &str) -> Vec<String> {
 
     versions.sort();
     versions.dedup();
-    versions.into_iter().map(|v| v.to_string()).collect()
+    Ok(versions.into_iter().map(|v| v.to_string()).collect())
 }
 
 /// Resolve a version string for a language.
@@ -103,6 +101,25 @@ pub fn resolve_partial_version(candidate: &str, avail: &[Version], lang: &str) -
         })
         .max()
         .cloned();
-    best.map(|v| v.to_string())
-        .ok_or_else(|| anyhow!("Could not find {lang} version matching: {candidate}"))
+    match best {
+        Some(v) => Ok(v.to_string()),
+        None => {
+            let mut similar = avail
+                .iter()
+                .rev()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>();
+            similar.truncate(5);
+            if similar.is_empty() {
+                Err(anyhow!(
+                    "Could not find {lang} version matching: {candidate}"
+                ))
+            } else {
+                Err(anyhow!(
+                    "Could not find {lang} version matching: {candidate}, available versions: {}",
+                    similar.join(", ")
+                ))
+            }
+        }
+    }
 }

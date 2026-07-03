@@ -30,12 +30,16 @@
 
 ```bash
 export LVM_HOME="$HOME/.lvm"
-export DART_HOME="$HOME/.lvm/current/dart"       # 各语言的 env_extra_vars
+export KOTLIN_HOME="$HOME/.lvm/current/kotlin"   # 各语言的 env_extra_vars
+export JAVA_HOME="$HOME/.lvm/current/java"
+export GOPATH="$HOME/.lvm/current/go/packages"    # Go 额外路径
 export FLUTTER_HOME="$HOME/.lvm/current/flutter"
+export DART_HOME="$HOME/.lvm/current/dart"
+export PUB_CACHE="$HOME/.lvm/current/dart/pub-cache"
 export PATH="$HOME/.lvm/current/node/bin:$HOME/.lvm/current/go/packages/bin:$HOME/.lvm/bin:$PATH"
 ```
 
-PATH 条目拼接顺序：
+PATH 条目拼接顺序（仅对已激活版本的语言生效）：
 
 1. 每个语言的 `current/{name}/bin`（自动）
 2. 每个语言的 `env_extra_paths()`（如 Go 的 `current/go/packages/bin`）
@@ -50,6 +54,7 @@ PATH 条目拼接顺序：
 - **Fish/$PWD**：`--on-variable PWD` 事件
 
 不区分 `.lvmrc` 还是 `.nvmrc`，统一走 `lvm use` 命令自动解析。
+Hook 脚本使用 `std::env::current_exe()` 获取 lvm 二进制真实路径，无论安装在哪里都能正确工作。
 
 ## 命令工作流
 
@@ -79,8 +84,8 @@ dispatch.rs → 没有 language/version 参数
 
 当没有指定版本时（`lvm use node`），优先级：
 
-1. `.nvmrc`（仅 Node，`node/nvmrc.rs`）
-2. `.lvmrc`（所有语言通用，`lvmrc::read_lvmrc_version()`）
+1. `.lvmrc`（所有语言通用，`lvmrc::read_lvmrc_version()`）
+2. `rc_version()` — 各语言 RC 文件（Node 的 `nvmrc::resolve_nvmrc_version()`）
 3. `default` 别名（`lvm alias node default 20`）
 4. 远程最新版本
 
@@ -89,6 +94,7 @@ dispatch.rs → 没有 language/version 参数
 `lvm debug` 输出（`src/commands/debug/mod.rs`）：
 
 ```text
+lvm v0.0.6
 OS:          macos
 Arch:        aarch64
 LVM_HOME:    /Users/user/.lvm
@@ -96,12 +102,18 @@ Downloads:   /Users/user/.lvm/downloads
 Cache:       /Users/user/.lvm/cache
 
 Registered languages:
-  node: current=20.14.0
-  go:   current=1.22.3
-  dart: current=
+  node:    current=20.14.0
+  go:      current=1.22.3
+  java:    current=21.0.3
+  python:  current=3.12.4
+  dart:    current=3.6.0
+  flutter: current=3.29.0
+  kotlin:  current=2.0.0
+  rust:    current=1.82.0
 
 PATH entries:
   /Users/user/.lvm/current/node/bin ← lvm
+  /Users/user/.lvm/current/go/packages/bin ← lvm
   /Users/user/.lvm/bin ← lvm
   /opt/homebrew/bin [has node, go]
 ```

@@ -23,6 +23,8 @@ const PROGRESS_BAR_CHARS: &str = "=>-";
 
 static OFFLINE: AtomicBool = AtomicBool::new(false);
 
+static PARALLEL_DOWNLOADS: AtomicBool = AtomicBool::new(false);
+
 pub fn set_offline(offline: bool) {
     OFFLINE.store(offline, Ordering::Release);
 }
@@ -31,7 +33,20 @@ pub fn is_offline() -> bool {
     OFFLINE.load(Ordering::Relaxed)
 }
 
+pub fn set_parallel_downloads(parallel: bool) {
+    PARALLEL_DOWNLOADS.store(parallel, Ordering::Release);
+}
+
+fn show_download_progress(requested: bool) -> bool {
+    requested && !PARALLEL_DOWNLOADS.load(Ordering::Relaxed)
+}
+
 // ─── HTTP 客户端 ───
+
+fn user_agent() -> &'static str {
+    static UA: OnceLock<String> = OnceLock::new();
+    UA.get_or_init(|| format!("lvm-http-client/{}", env!("CARGO_PKG_VERSION")))
+}
 
 fn agent() -> &'static ureq::Agent {
     static AGENT: OnceLock<ureq::Agent> = OnceLock::new();
@@ -45,8 +60,7 @@ fn agent() -> &'static ureq::Agent {
 }
 
 pub fn get_url(url: &str) -> ureq::Request {
-    let ua = format!("lvm-http-client/{}", env!("CARGO_PKG_VERSION"));
-    agent().get(url).set("User-Agent", &ua)
+    agent().get(url).set("User-Agent", user_agent())
 }
 
 // ─── 下载与安装 ───
@@ -101,7 +115,7 @@ fn ensure_downloaded(
     report(format!("  from: {dl_url}"));
     report(format!("  to:   {}", tar_path.display()));
     flush_reports_to_stdout();
-    download(dl_url, tar_path, true)?;
+    download(dl_url, tar_path, show_download_progress(true))?;
     verify(tar_path)
 }
 

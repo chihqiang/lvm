@@ -29,7 +29,7 @@ eval "$(lvm env)"
 eval "$(lvm hook)"
 ```
 
-`lvm env` 设置 PATH、GOPATH（Go）、FLUTTER_HOME（Flutter）及各语言环境变量。`lvm hook` 启用进入目录时自动切换版本（当目录包含 `.lvmrc` 或 `.nvmrc` 时）。
+`lvm env` 设置 `LVM_HOME`、将 `~/.lvm/bin` 加入 PATH，并输出各语言的环境变量（如 `GOPATH`、`JAVA_HOME`、`FLUTTER_HOME`）——仅对已激活版本的语言生效。`lvm hook` 启用进入目录时自动切换版本（当目录包含 `.lvmrc` 或 `.nvmrc` 时）。
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ lvm list node
 
 # 切换使用版本
 lvm use node 22
-lvm use node                  # 不指定版本：.nvmrc → .lvmrc → 默认别名 → 最新版
+lvm use node                  # 不指定版本：.lvmrc → .nvmrc → 默认别名 → 最新版
 
 # 切换后同时写入 .lvmrc（项目级锁定）
 lvm use node 22 --save
@@ -205,9 +205,9 @@ lvm current rust
 
 | Command | Description |
 | ------- | ----------- |
-| `lvm install [language] [version]` | 安装指定版本。省略参数则安装 `.lvmrc` 中所有语言，无 `.lvmrc` 时回退到 `.nvmrc`。支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
+| `lvm install [language] [version]` | 安装指定版本。省略参数则安装 `.lvmrc` 中所有语言，无 `.lvmrc` 时回退到各语言的 RC 文件（Node 为 `.nvmrc`）。支持 `--lts`、`--save`、`--no-default`、`--offline`、`--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | 卸载已安装版本 |
-| `lvm use [language] [version]` | 切换当前版本，Node 不指定 version 时按 `.nvmrc` → `.lvmrc` → 默认别名 → 最新版查找。支持 `--save`、`--no-default` |
+| `lvm use [language] [version]` | 切换当前版本，不指定 version 时按 `.lvmrc` → RC 文件（Node 为 `.nvmrc`）→ 默认别名 → 最新版查找。支持 `--save`、`--no-default` |
 | `lvm list <language>` | 列出已安装版本（标记 current/default） |
 | `lvm list-remote <language>` | 列出可安装版本，支持 `--lts` 过滤仅 LTS |
 | `lvm current [language]` | 显示当前使用版本，不指定 language 显示所有语言 |
@@ -250,7 +250,7 @@ go=1.22.3
 
 支持 `#` 注释和空行。多语言可写在同一文件中。
 
-**`.nvmrc` 兼容**：lvm 也会读取 `.nvmrc` 文件。执行 `lvm use node`（不指定版本）时，`.nvmrc` 优先级高于 `.lvmrc`。这意味着从 nvm/fnm 迁移无需额外配置——保留你的 `.nvmrc` 即可。
+**`.nvmrc` 兼容**：lvm 也会读取 `.nvmrc` 文件。`.lvmrc` 优先级高于 `.nvmrc`——两者同时存在时优先使用 `.lvmrc`。这意味着从 nvm/fnm 迁移无需额外配置——保留你的 `.nvmrc` 即可。
 
 执行 `lvm install`（不传参数）会一次安装 `.lvmrc` 中声明的所有版本。
 
@@ -345,8 +345,8 @@ eval "$(lvm env)"    # PATH 和各语言环境变量
 eval "$(lvm hook)"   # .lvmrc / .nvmrc 自动切换 hook
 ```
 
-- **`lvm env`**：输出 `LVM_HOME`、`GOPATH`（Go）、`FLUTTER_HOME`（Flutter）、`KOTLIN_HOME`（Kotlin）、`PATH` 环境变量。`rustc` 和 `cargo` 也会链接到 `~/.lvm/bin/`。Windows 输出 cmd.exe 语法。
-- **`lvm hook`**：输出自动切换脚本。默认自动检测当前 shell，可用 `--shell` 指定。bash 通过 `PROMPT_COMMAND`，zsh 通过 `chpwd` 钩子，fish 使用 `--on-variable PWD`，powershell 覆写 `prompt` 函数，进入含 `.lvmrc` 或 `.nvmrc` 的目录时自动执行 `lvm use`。Windows 上不可用（除非显式 `--shell powershell`）。
+- **`lvm env`**：输出 `LVM_HOME`、`GOPATH`（Go）、`FLUTTER_HOME`（Flutter）、`KOTLIN_HOME`（Kotlin）、`PATH` 环境变量。仅包含已激活版本的语言——不会为未使用的语言输出无用的环境变量。`rustc` 和 `cargo` 也会链接到 `~/.lvm/bin/`。Windows 输出 cmd.exe 语法。
+- **`lvm hook`**：输出自动切换脚本。默认自动检测当前 shell，可用 `--shell` 指定。bash 通过 `PROMPT_COMMAND`，zsh 通过 `chpwd` 钩子，fish 使用 `--on-variable PWD`，powershell 覆写 `prompt` 函数，进入含 `.lvmrc` 或 `.nvmrc` 的目录时自动执行 `lvm use`。使用 `current_exe()` 获取实际的二进制路径，无论 lvm 安装在哪里都能正确工作。Windows 上不可用（除非显式 `--shell powershell`）。
 - **`lvm env --shell bash|zsh|fish`**：输出命令补全脚本。
 - **Node.js**：npm 全局包安装到对应版本目录，切换版本后不共享。
 - **Go**：`GOPATH` 自动设为 `$LVM_HOME/current/go/packages`（符号链接动态指向当前版本），`go install` 安装的二进制与系统和其他版本隔离。

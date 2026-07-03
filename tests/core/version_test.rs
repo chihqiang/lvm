@@ -108,3 +108,20 @@ fn test_resolve_partial_version_invalid_input() {
     let result = lvm::core::version::resolve_partial_version("abc", &avail, "node");
     assert!(result.is_err());
 }
+
+#[test]
+fn test_parse_github_releases_valid() {
+    let json = r#"[
+        {"tag_name": "v1.0.0", "draft": false, "prerelease": false},
+        {"tag_name": "v1.1.0", "draft": false, "prerelease": false},
+        {"tag_name": "v2.0.0-rc1", "draft": false, "prerelease": true}
+    ]"#;
+    let versions = lvm::core::version::parse_github_releases(json).unwrap();
+    assert_eq!(versions, vec!["1.0.0", "1.1.0"]);
+}
+
+#[test]
+fn test_parse_github_releases_invalid_json() {
+    let result = lvm::core::version::parse_github_releases("not json");
+    assert!(result.is_err());
+}

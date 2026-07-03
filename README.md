@@ -29,7 +29,7 @@ eval "$(lvm env)"
 eval "$(lvm hook)"
 ```
 
-`lvm env` sets up PATH, GOPATH (Go), FLUTTER_HOME (Flutter), and other language-specific environment variables. `lvm hook` enables automatic version switching when entering a directory (when the directory contains `.lvmrc` or `.nvmrc` files).
+`lvm env` sets up `LVM_HOME`, adds `~/.lvm/bin` to PATH, and outputs language-specific environment variables (e.g. `GOPATH`, `JAVA_HOME`, `FLUTTER_HOME`) — only for languages that have an active version installed. `lvm hook` enables automatic version switching when entering a directory (when the directory contains `.lvmrc` or `.nvmrc` files).
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ lvm list node
 
 # Switch version
 lvm use node 22
-lvm use node                  # Without version: .nvmrc → .lvmrc → default alias → latest
+lvm use node                  # Without version: .lvmrc → .nvmrc → default alias → latest
 
 # Switch and write .lvmrc (project-level lock)
 lvm use node 22 --save
@@ -205,9 +205,9 @@ lvm current rust
 
 | Command | Description |
 | --------- | ------------- |
-| `lvm install [language] [version]` | Install a version. Without arguments, installs all from `.lvmrc`; falls back to `.nvmrc` if no `.lvmrc`. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
+| `lvm install [language] [version]` | Install a version. Without arguments, installs all from `.lvmrc`; falls back to per-language RC files (`.nvmrc` for Node) if no `.lvmrc`. Supports `--lts`, `--save`, `--no-default`, `--offline`, `--reinstall-packages-from` |
 | `lvm uninstall <language> <version>` | Uninstall a version |
-| `lvm use [language] [version]` | Switch to a version. Without version for Node, resolves via `.nvmrc` → `.lvmrc` → default alias → latest. Supports `--save`, `--no-default` |
+| `lvm use [language] [version]` | Switch to a version. Without version, resolves via `.lvmrc` → RC file (`.nvmrc` for Node) → default alias → latest. Supports `--save`, `--no-default` |
 | `lvm list <language>` | List installed versions (marks current/default) |
 | `lvm list-remote <language>` | List installable versions. Supports `--lts` to filter LTS only |
 | `lvm current [language]` | Show the active version. Without language, shows all languages |
@@ -250,7 +250,7 @@ go=1.22.3
 
 Supports `#` comments and blank lines. Multiple languages can be specified in the same file.
 
-**`.nvmrc` compatibility**: lvm also reads `.nvmrc` files. When using `lvm use node` (without specifying a version), `.nvmrc` is checked before `.lvmrc`. This ensures seamless migration from nvm/fnm — just keep your existing `.nvmrc` files.
+**`.nvmrc` compatibility**: lvm also reads `.nvmrc` files. `.lvmrc` takes priority over `.nvmrc` — if both exist, `.lvmrc` is used. This ensures seamless migration from nvm/fnm — just keep your existing `.nvmrc` files.
 
 Run `lvm install` without arguments to install all versions declared in `.lvmrc` at once.
 
@@ -345,8 +345,8 @@ eval "$(lvm env)"    # PATH and language-specific env vars
 eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 ```
 
-- **`lvm env`**: Outputs `LVM_HOME`, `GOPATH` (Go), `FLUTTER_HOME` (Flutter), `KOTLIN_HOME` (Kotlin), and `PATH` environment variables. `rustc` and `cargo` are also symlinked into `~/.lvm/bin/`. Windows outputs cmd.exe syntax.
-- **`lvm hook`**: Outputs auto-switch script. Defaults to detecting the current shell; use `--shell` to override. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook, fish uses `--on-variable PWD`, powershell overrides the `prompt` function — automatically runs `lvm use` when entering a directory containing `.lvmrc` or `.nvmrc`. Not available on Windows (unless `--shell powershell` is explicitly given).
+- **`lvm env`**: Outputs `LVM_HOME`, `GOPATH` (Go), `FLUTTER_HOME` (Flutter), `KOTLIN_HOME` (Kotlin), and `PATH` environment variables. Only languages with an active version are included — no stale env vars for unused languages. `rustc` and `cargo` are also symlinked into `~/.lvm/bin/`. Windows outputs cmd.exe syntax.
+- **`lvm hook`**: Outputs auto-switch script. Defaults to detecting the current shell; use `--shell` to override. bash uses `PROMPT_COMMAND`, zsh uses the `chpwd` hook, fish uses `--on-variable PWD`, powershell overrides the `prompt` function — automatically runs `lvm use` when entering a directory containing `.lvmrc` or `.nvmrc`. Uses the actual binary path via `current_exe()` — works regardless of where `lvm` is installed. Not available on Windows (unless `--shell powershell` is explicitly given).
 - **`lvm env --shell bash|zsh|fish`**: Outputs command completion scripts.
 - **Node.js**: npm global packages are installed to the corresponding version directory; not shared after switching versions.
 - **Go**: `GOPATH` is automatically set to `$LVM_HOME/current/go/packages` (symlink dynamically points to the current version). Binaries installed via `go install` are isolated from the system and other versions.

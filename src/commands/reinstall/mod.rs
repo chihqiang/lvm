@@ -58,13 +58,20 @@ pub(crate) fn reinstall_packages(
             if !path.components().any(|c| c.as_os_str() == modules_dir) {
                 return None;
             }
-            let name = path
+            let rev_parts: Vec<_> = path
                 .components()
                 .rev()
                 .take_while(|c| c.as_os_str() != modules_dir)
-                .last()
-                .and_then(|c| c.as_os_str().to_str());
-            let name = name?;
+                .collect();
+            if rev_parts.is_empty() {
+                return None;
+            }
+            let name = rev_parts
+                .into_iter()
+                .rev()
+                .filter_map(|c| c.as_os_str().to_str())
+                .collect::<Vec<_>>()
+                .join("/");
             if name == pkg_manager || name == "corepack" {
                 return None;
             }

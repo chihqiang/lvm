@@ -30,7 +30,9 @@ src/
     ├── java/            # Java（Adoptium API）实现
     ├── python/          # Python（python-build-standalone）实现
     ├── dart/            # Dart SDK 实现
-    └── flutter/         # Flutter SDK 实现
+    ├── flutter/         # Flutter SDK 实现
+    ├── kotlin/          # Kotlin 编译器实现
+    └── rust/            # Rust 工具链实现
 ```
 
 ## 核心基础设施（`src/core/`）
@@ -67,10 +69,11 @@ src/
 | `hook` | `hook/mod.rs` | Shell 自动切换 |
 | `debug` | `debug/mod.rs` | 调试诊断 |
 | `reinstall` | `reinstall/mod.rs` | 重装全局包 |
+| `output.rs` | — | 非缓冲输出（`info`/`warn`） |
 
 ## 语言模块（`src/language/`）
 
-每个语言三个文件：
+每个语言至少三个文件：
 
 ```text
 {name}/
@@ -78,3 +81,5 @@ src/
 ├── version.rs  — fetch_latest_version()、fetch_all_versions()
 └── mod.rs      — Language trait 实现 + resolve_version()
 ```
+
+Node.js 有额外的 `nvmrc.rs`（`.nvmrc` 文件读取）和 `lts.rs`（LTS 版本解析）。

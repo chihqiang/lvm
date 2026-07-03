@@ -155,6 +155,15 @@ impl Language for {Name}Language {
         vec![self.current_link().join(crate::config::BIN_DIR)]
     }
 
+    /// 如果语言有项目级 RC 文件（如 Node 的 .nvmrc），在此返回解析后的版本
+    fn rc_version(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
+        vec![self.current_link().join(crate::config::BIN_DIR)]
+    }
+
     fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
         vec![("{NAME}_HOME", self.current_link())]
     }
@@ -193,7 +202,24 @@ let archs: &[&str] = if config::target_arch() != "x64" {
 - 循环 `archs`，每个 arch 尝试下载+安装
 - 成功后 `return Ok(resolved)`
 - 失败时 `report_fallback(arch, next_arch)` → 继续下一个 arch
-- 有一个特例：Node 的 `resolve_install_version()` 额外支持直接 URL 安装，此时不走 arch fallback
+
+也可使用 `language::install_with_fallback()` 辅助函数（Go、Python、Dart、Rust 使用），封装了上述循环逻辑：
+
+```rust
+language::install_with_fallback(
+    "Name", &resolved, os, native_arch, archs,
+    &|| self.is_installed(&version_dir),
+    &mut |arch| {
+        let url = config::download_url(&resolved, os, arch, ext);
+        let tar_path = config::downloads_dir_or_default()
+            .join(config::tarball_filename(&resolved, os, arch, ext));
+        language::download_and_install(&url, &tar_path, &resolved, &version_dir, "Name", |_| Ok(()))
+    },
+)?;
+```
+
+- 如果语言所有平台都用同一二进制不分 arch（如 Kotlin），可以跳过 arch fallback，直接下载。
+- Node 的 `resolve_install_version()` 额外支持直接 URL 安装，此时不走 arch fallback。
 
 ### Zip 格式校验
 
@@ -246,10 +272,11 @@ impl super::{Name}Language {
 | Python | 从排序后列表取 last | `python.org/ftp/python/` HTML | `<a href="...">` 解析 |
 | Dart | `latest/VERSION` JSON 的 `"version"` | S3 XML listing | XML `<Key>` 解析 |
 | Flutter | `releases_{os}.json` 的 `current_release.stable` | 同上 JSON | `serde_json::Value` |
+| Kotlin | GitHub Releases API 取 latest | 同上 | `serde_json::Value` |
+| Rust | GitHub Releases API 取 latest | 同上 | `serde_json::Value` |
 
 ## 5. 注册
 
 1. `src/language/mod.rs` — 添加 `pub mod {name};`
 2. `src/main.rs` — `registry.register(Box::new(language::{name}::{Name}Language));`
-3. 如果语言需要 `.lvmrc` 自动切换，在 `src/commands/use_version/mod.rs` 添加特殊处理
-4. 如果语言需要 `.nvmrc` 兼容，参考 `node/nvmrc.rs` 和 `dispatch.rs`
+3. 如果语言有自有的 RC 文件格式，实现 `rc_version()` 方法（默认返回 `Ok(None)`），自动获得与 `.lvmrc` 集成的版本解析支持
