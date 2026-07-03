@@ -63,10 +63,12 @@ fn resolve_install_args(
                 }
                 return Ok(vec);
             }
-            if let Some(ver) = lvm::language::node::read_nvmrc()?
-                && !ver.is_empty()
-            {
-                return Ok(vec![("node".to_string(), Some(ver))]);
+            for name in registry.list_names() {
+                if let Some(lang) = registry.get(name)
+                    && let Some(v) = lang.rc_version()?
+                {
+                    return Ok(vec![(name.to_string(), Some(v))]);
+                }
             }
             bail!("No .lvmrc or .nvmrc found. Create one or specify arguments")
         }
@@ -114,9 +116,8 @@ pub(crate) fn execute(
                     return Err(e);
                 }
             };
-            let last_plan = plans.last().cloned();
             commands::install_plans(registry, &plans, no_default)?;
-            if save && let Some(msg) = write_save(registry, last_plan.as_ref())? {
+            if save && let Some(msg) = write_save(registry, &plans)? {
                 output::info(msg);
             }
             if let Some(from_ver) = reinstall_from {
@@ -134,11 +135,10 @@ pub(crate) fn execute(
             let save = sub.get_flag("save");
 
             let plans = resolve_install_args(arg_lang, arg_ver, registry)?;
-            let last_plan = plans.last().cloned();
             for (lang, ver) in &plans {
                 commands::use_version(registry, lang, ver.as_deref(), set_default)?;
             }
-            if save && let Some(msg) = write_save(registry, last_plan.as_ref())? {
+            if save && let Some(msg) = write_save(registry, &plans)? {
                 output::info(msg);
             }
             Ok(())
@@ -198,7 +198,7 @@ pub(crate) fn execute(
         }
         Some(("prune", sub)) => {
             let language = req_arg(sub, "language")?;
-            let keep = sub.get_one::<usize>("keep").copied().unwrap_or(3);
+            let keep = *sub.get_one::<usize>("keep").expect("keep has default value");
             commands::prune(registry, language, keep)
         }
         Some(("env", sub)) => {
@@ -231,14 +231,20 @@ pub(crate) fn execute(
 /// 将当前版本写入 .lvmrc，返回要打印的消息
 fn write_save(
     registry: &LanguageRegistry,
-    plan: Option<&(String, Option<String>)>,
+    plans: &[(String, Option<String>)],
 ) -> Result<Option<String>> {
-    if let Some((lang, _)) = plan
-        && let Some(language) = registry.get(lang)
-        && let Some(cur) = language.current_version()?
-    {
-        lvmrc::write_lvmrc(lang, &cur)?;
-        return Ok(Some(format!("Wrote {lang}={cur} to .lvmrc")));
+    let mut count = 0;
+    for (lang, _) in plans {
+        if let Some(language) = registry.get(lang)
+            && let Some(cur) = language.current_version()?
+        {
+            lvmrc::write_lvmrc(lang, &cur)?;
+            count += 1;
+        }
     }
-    Ok(None)
+    if count > 0 {
+        Ok(Some(format!("Wrote {count} language(s) to .lvmrc")))
+    } else {
+        Ok(None)
+    }
 }

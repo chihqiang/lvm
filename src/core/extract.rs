@@ -40,6 +40,9 @@ fn extract_zip(zip_path: &Path, version_dir: &Path) -> Result<()> {
                 continue;
             };
 
+            if path.is_absolute() {
+                bail!("Extraction failed: absolute path in archive")
+            }
             let out_path = version_dir.join(strip_top_level(&path)?);
 
             if entry.is_dir() {

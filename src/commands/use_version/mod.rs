@@ -51,12 +51,9 @@ pub(crate) fn use_version(
     let version = match version {
         Some(v) => v.to_string(),
         None => {
-            if language == "node"
-                && let Some(v) = lvm::language::node::read_nvmrc()?
-                && !v.is_empty()
-            {
+            if let Some(v) = lvmrc::read_lvmrc_version(language)? {
                 v
-            } else if let Some(v) = lvmrc::read_lvmrc_version(language)? {
+            } else if let Some(v) = p.rc_version()? {
                 v
             } else if let Some(v) = alias::get_default_version(language)? {
                 v

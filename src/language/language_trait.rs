@@ -37,20 +37,20 @@ pub trait Language: Send + Sync {
 
     fn lvm_dir(&self) -> PathBuf {
         config::lvm_home()
-            .expect("LVM home directory is required")
+            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm"))
             .join(self.subdir_name())
     }
 
     fn current_link(&self) -> PathBuf {
         config::lvm_home()
-            .expect("LVM home directory is required")
+            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm"))
             .join(config::CURRENT_DIR)
             .join(self.subdir_name())
     }
 
     fn bin_link(&self) -> PathBuf {
         config::lvm_home()
-            .expect("LVM home directory is required")
+            .unwrap_or_else(|_| std::path::PathBuf::from(".lvm"))
             .join(config::BIN_DIR)
             .join(format!(
                 "{}{}",
@@ -104,6 +104,10 @@ pub trait Language: Send + Sync {
 
     fn packages_dir_name(&self) -> Option<&'static str> {
         None
+    }
+
+    fn rc_version(&self) -> Result<Option<String>> {
+        Ok(None)
     }
 
     fn use_version(&self, version: &str, set_default: bool) -> Result<()> {
