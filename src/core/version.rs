@@ -104,12 +104,21 @@ pub fn resolve_partial_version(candidate: &str, avail: &[Version], lang: &str) -
     match best {
         Some(v) => Ok(v.to_string()),
         None => {
-            let mut similar = avail.iter().rev().map(|v| v.to_string()).collect::<Vec<_>>();
+            let mut similar = avail
+                .iter()
+                .rev()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>();
             similar.truncate(5);
             if similar.is_empty() {
-                Err(anyhow!("Could not find {lang} version matching: {candidate}"))
+                Err(anyhow!(
+                    "Could not find {lang} version matching: {candidate}"
+                ))
             } else {
-                Err(anyhow!("Could not find {lang} version matching: {candidate}, available versions: {}", similar.join(", ")))
+                Err(anyhow!(
+                    "Could not find {lang} version matching: {candidate}, available versions: {}",
+                    similar.join(", ")
+                ))
             }
         }
     }

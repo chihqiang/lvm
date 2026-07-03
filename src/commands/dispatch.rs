@@ -198,7 +198,9 @@ pub(crate) fn execute(
         }
         Some(("prune", sub)) => {
             let language = req_arg(sub, "language")?;
-            let keep = *sub.get_one::<usize>("keep").expect("keep has default value");
+            let keep = *sub
+                .get_one::<usize>("keep")
+                .expect("keep has default value");
             commands::prune(registry, language, keep)
         }
         Some(("env", sub)) => {

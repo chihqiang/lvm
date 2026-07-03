@@ -11,16 +11,24 @@
 | `LVM_PYTHON_TAG` | `20260623` | python-build-standalone 发布 tag | `python/config.rs` |
 | `LVM_DART_MIRROR` | `https://storage.googleapis.com/dart-archive` | Dart SDK 下载镜像源 | `dart/config.rs` |
 | `LVM_FLUTTER_MIRROR` | `https://storage.googleapis.com/flutter_infra_release/releases` | Flutter SDK 下载镜像源 | `flutter/config.rs` |
+| `LVM_KOTLIN_MIRROR` | `https://github.com/JetBrains/kotlin/releases/download` | Kotlin 编译器下载镜像源 | `kotlin/config.rs` |
+| `LVM_RUST_MIRROR` | `https://static.rust-lang.org/dist` | Rust 工具链下载镜像源 | `rust/config.rs` |
 | `LVM_INSTALL_DIR` | `/usr/local/bin` | install.sh 安装路径 | `install.sh` |
 | `LVM_DOWNLOAD_URL` | `https://github.com/chihqiang/lvm/releases/latest/download` | install.sh 下载 base URL | `install.sh` |
 
-运行时环境变量（不依赖 `lvm env`）：
+运行时环境变量（由 `lvm env` 输出，仅对已激活版本的语言生效）：
 
-| 变量 | 说明 |
-| ------ | ------ |
-| `LVM_HOME` | 由 `lvm env` 设置，指向 `~/.lvm` |
-| `{LANG}_HOME` | 由 `lvm env` 设置，如 `DART_HOME`、`FLUTTER_HOME` |
-| `PATH` | 由 `lvm env` 追加各语言 `bin/` 目录 |
+| 变量 | 源语言 | 说明 |
+| ------ | ------ | ------ |
+| `LVM_HOME` | — | 指向 `~/.lvm` |
+| `JAVA_HOME` | Java | 当前 Java 版本目录 |
+| `GOPATH` | Go | `$LVM_HOME/current/go/packages` |
+| `PYTHON_HOME` | Python | 当前 Python 版本目录 |
+| `DART_HOME` | Dart | 当前 Dart 版本目录 |
+| `FLUTTER_HOME` | Flutter | 当前 Flutter 版本目录 |
+| `KOTLIN_HOME` | Kotlin | 当前 Kotlin 编译器目录 |
+| `PUB_CACHE` | Dart/Flutter | 当前版本的 `pub-cache` 目录 |
+| `PATH` | — | 追加各语言 `bin/` 及 `$LVM_HOME/bin` |
 
 ## `.lvmrc` 文件格式
 
@@ -37,12 +45,12 @@ flutter=3.29.0
 ```
 
 - 查找规则：从当前目录向上遍历最多 100 层
-- 优先级低于 `.nvmrc`（仅 Node），高于 default 别名
+- 优先级高于 `.nvmrc`（`.lvmrc` → `rc_version()` → default 别名 → 最新版）
 - `lvm install` 和 `lvm use` 支持 `--save` / `-w` 写入
 
 ## `.nvmrc` 兼容
 
-`.nvmrc` 文件由 `node/nvmrc.rs` 读取，仅影响 Node。查找规则同 `.lvmrc`（向上遍历），优先级高于 `.lvmrc`。
+`.nvmrc` 文件由 `node/nvmrc.rs` 读取，仅影响 Node。查找规则同 `.lvmrc`（向上遍历）。支持 `lts/*`、`lts/<codename>`、`node`（最新版）等关键字。优先级低于 `.lvmrc`——两者同时存在时 `.lvmrc` 优先。
 
 ## 离线模式
 

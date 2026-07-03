@@ -15,12 +15,12 @@ pub(crate) fn env(registry: &LanguageRegistry) {
     let mut path_entries = Vec::new();
     let mut extra_vars = Vec::new();
     for name in registry.list_names() {
-        if let Some(lang) = registry.get(name) {
-            if lang.current_version().is_ok_and(|v| v.is_some()) {
-                path_entries.push(lang.current_link().join(config::BIN_DIR));
-                path_entries.extend(lang.env_extra_paths());
-                extra_vars.extend(lang.env_extra_vars());
-            }
+        if let Some(lang) = registry.get(name)
+            && lang.current_version().is_ok_and(|v| v.is_some())
+        {
+            path_entries.push(lang.current_link().join(config::BIN_DIR));
+            path_entries.extend(lang.env_extra_paths());
+            extra_vars.extend(lang.env_extra_vars());
         }
     }
     path_entries.push(bin_path);
