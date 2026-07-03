@@ -1,11 +1,10 @@
 pub(crate) mod config;
 mod version;
 
-use anyhow::{Context, Result, bail};
-use std::path::Path;
-use zip::ZipArchive;
+use anyhow::{Result, bail};
 
 use super::Language;
+use crate::core::extract;
 use crate::language;
 
 pub struct FlutterLanguage;
@@ -27,43 +26,23 @@ impl Language for FlutterLanguage {
             return Ok(resolved);
         }
 
+        // Flutter SDK is per-OS (not per-arch); skip arch fallback.
         let os = config::target_os();
-        let native_arch = config::target_arch();
-        let archs: &[&str] = if native_arch != "x64" {
-            &[native_arch, "x64"]
-        } else {
-            &[native_arch]
-        };
+        let arch = config::target_arch();
+        let url = config::download_url(&resolved, os, arch);
+        let tar_path = crate::config::downloads_dir_or_default()
+            .join(config::tarball_filename(&resolved, os, arch));
 
-        language::install_with_fallback(
-            "Flutter",
+        language::download_and_install(
+            &url,
+            &tar_path,
             &resolved,
-            os,
-            native_arch,
-            archs,
-            &|| self.is_installed(&version_dir),
-            &mut |arch| {
-                let url = config::download_url(&resolved, os, arch);
-                let tar_path = crate::config::downloads_dir_or_default()
-                    .join(config::tarball_filename(&resolved, os, arch));
+            &version_dir,
+            "Flutter",
+            extract::verify_zip_archive,
+        )?;
 
-                let verify_zip = |path: &Path| -> Result<()> {
-                    let file = std::fs::File::open(path)
-                        .with_context(|| format!("Failed to open {}", path.display()))?;
-                    ZipArchive::new(file).context("Corrupted zip archive")?;
-                    Ok(())
-                };
-
-                language::download_and_install(
-                    &url,
-                    &tar_path,
-                    &resolved,
-                    &version_dir,
-                    "Flutter",
-                    verify_zip,
-                )
-            },
-        )
+        Ok(resolved)
     }
 
     fn list_remote_versions(&self) -> Result<Vec<String>> {

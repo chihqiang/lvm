@@ -22,6 +22,6 @@ impl super::RustLanguage {
             response.into_string().context("Failed to read response")
         })?;
 
-        Ok(language::parse_github_releases(&text))
+        language::parse_github_releases(&text)
     }
 }

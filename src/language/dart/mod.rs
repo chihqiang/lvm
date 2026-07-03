@@ -1,12 +1,10 @@
 pub(crate) mod config;
 mod version;
 
-use std::path::Path;
-
-use anyhow::{Context, Result, bail};
-use zip::ZipArchive;
+use anyhow::{Result, bail};
 
 use super::Language;
+use crate::core::extract;
 use crate::language;
 
 pub struct DartLanguage;
@@ -48,20 +46,13 @@ impl Language for DartLanguage {
                 let tar_path = crate::config::downloads_dir_or_default()
                     .join(config::tarball_filename(&resolved, os, arch));
 
-                let verify_zip = |path: &Path| -> Result<()> {
-                    let file = std::fs::File::open(path)
-                        .with_context(|| format!("Failed to open {}", path.display()))?;
-                    ZipArchive::new(file).context("Corrupted zip archive")?;
-                    Ok(())
-                };
-
                 language::download_and_install(
                     &url,
                     &tar_path,
                     &resolved,
                     &version_dir,
                     "Dart",
-                    verify_zip,
+                    extract::verify_zip_archive,
                 )
             },
         )

@@ -24,7 +24,7 @@ pub(crate) use debug::debug;
 
 pub(crate) use env::{env, env_completions};
 pub(crate) use hook::hook;
-pub(crate) use install::install;
+pub(crate) use install::install_plans;
 pub(crate) use list::{list, list_remote};
 pub(crate) use prune::prune;
 pub(crate) use reinstall::reinstall_packages;

@@ -110,15 +110,12 @@ pub(crate) fn execute(
                         let mut help = crate::commands::cli::install_subcommand();
                         let _ = help.print_help();
                         println!();
-                        return Ok(());
                     }
                     return Err(e);
                 }
             };
             let last_plan = plans.last().cloned();
-            for (lang, ver) in &plans {
-                commands::install(registry, lang, ver.as_deref(), no_default)?;
-            }
+            commands::install_plans(registry, &plans, no_default)?;
             if save && let Some(msg) = write_save(registry, last_plan.as_ref())? {
                 output::info(msg);
             }

@@ -59,7 +59,3 @@ pub(crate) fn releases_url() -> String {
 pub(crate) fn flutter_versions_cache_filename() -> &'static str {
     "flutter-versions.json"
 }
-
-pub(crate) fn flutter_latest_version_cache_filename() -> &'static str {
-    "flutter-latest-version.json"
-}

@@ -8,7 +8,7 @@ use crate::core::report::report;
 use crate::core::version::compare_versions;
 use anyhow::{Context, Result, bail};
 
-pub trait Language {
+pub trait Language: Send + Sync {
     fn name(&self) -> &str;
 
     fn install(&self, version: Option<&str>) -> Result<String>;

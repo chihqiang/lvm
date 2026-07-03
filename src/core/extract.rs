@@ -96,3 +96,11 @@ pub fn extract_archive(archive_path: &Path, version_dir: &Path) -> Result<()> {
         extract_tarball(archive_path, version_dir)
     }
 }
+
+/// Verify that a zip archive can be opened and read without extracting it.
+pub fn verify_zip_archive(path: &Path) -> Result<()> {
+    let file =
+        fs::File::open(path).with_context(|| format!("Failed to open {}", path.display()))?;
+    zip::ZipArchive::new(file).context("Corrupted zip archive")?;
+    Ok(())
+}

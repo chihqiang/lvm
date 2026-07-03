@@ -1,15 +1,13 @@
 use semver::Version;
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow, bail};
 
 /// Parse a GitHub releases API JSON response and extract stable versions.
 /// Filters out draft and prerelease entries. Expects `tag_name` to contain
 /// a semver version string (with or without a leading `v`).
-pub fn parse_github_releases(json: &str) -> Vec<String> {
-    let root: Vec<serde_json::Value> = match serde_json::from_str(json) {
-        Ok(v) => v,
-        Err(_) => return vec![],
-    };
+pub fn parse_github_releases(json: &str) -> Result<Vec<String>> {
+    let root: Vec<serde_json::Value> =
+        serde_json::from_str(json).context("Failed to parse GitHub releases JSON")?;
 
     let mut versions: Vec<Version> = Vec::new();
     for release in &root {
@@ -38,7 +36,7 @@ pub fn parse_github_releases(json: &str) -> Vec<String> {
 
     versions.sort();
     versions.dedup();
-    versions.into_iter().map(|v| v.to_string()).collect()
+    Ok(versions.into_iter().map(|v| v.to_string()).collect())
 }
 
 /// Resolve a version string for a language.

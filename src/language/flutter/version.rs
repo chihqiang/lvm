@@ -3,9 +3,7 @@ use anyhow::{Context, Result};
 use crate::config;
 use crate::language;
 
-use super::config::{
-    flutter_latest_version_cache_filename, flutter_versions_cache_filename, releases_url,
-};
+use super::config::{flutter_versions_cache_filename, releases_url};
 
 fn parse_stable_versions(text: &str) -> Vec<semver::Version> {
     let root: serde_json::Value = match serde_json::from_str(text) {
@@ -32,17 +30,19 @@ fn parse_stable_versions(text: &str) -> Vec<semver::Version> {
     versions
 }
 
+fn fetch_releases_json() -> Result<String> {
+    let cache_file = config::cache_path(flutter_versions_cache_filename());
+    language::fetch_with_cache(&cache_file, || {
+        let response = language::get_url(&releases_url())
+            .call()
+            .context("Failed to fetch Flutter releases")?;
+        response.into_string().context("Failed to read response")
+    })
+}
+
 impl super::FlutterLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
-        let cache_file = config::cache_path(flutter_latest_version_cache_filename());
-
-        let text = language::fetch_with_cache(&cache_file, || {
-            let response = language::get_url(&releases_url())
-                .call()
-                .context("Failed to fetch Flutter releases")?;
-            response.into_string().context("Failed to read response")
-        })?;
-
+        let text = fetch_releases_json()?;
         let versions = parse_stable_versions(&text);
         versions
             .last()
@@ -51,15 +51,7 @@ impl super::FlutterLanguage {
     }
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
-        let cache_file = config::cache_path(flutter_versions_cache_filename());
-
-        let text = language::fetch_with_cache(&cache_file, || {
-            let response = language::get_url(&releases_url())
-                .call()
-                .context("Failed to fetch Flutter releases")?;
-            response.into_string().context("Failed to read response")
-        })?;
-
+        let text = fetch_releases_json()?;
         let versions = parse_stable_versions(&text);
         let mut deduped = versions;
         deduped.dedup();
