@@ -46,7 +46,9 @@ pub(crate) fn use_version(
         return Ok(());
     }
 
-    output::info(format!("{language} {version} is not installed, installing..."));
+    output::info(format!(
+        "{language} {version} is not installed, installing..."
+    ));
     let installed = p.install(Some(&version))?;
     flush();
     p.use_version(&installed, set_default)?;

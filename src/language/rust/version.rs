@@ -5,8 +5,7 @@ use crate::language;
 
 use super::config::rust_versions_cache_filename;
 
-const RUST_VERSIONS_URL: &str =
-    "https://api.github.com/repos/rust-lang/rust/releases?per_page=100";
+const RUST_VERSIONS_URL: &str = "https://api.github.com/repos/rust-lang/rust/releases?per_page=100";
 
 impl super::RustLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
