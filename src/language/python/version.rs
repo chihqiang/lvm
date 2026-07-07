@@ -48,14 +48,12 @@ fn fetch_versions_from_github() -> Result<Vec<String>> {
     let mut versions: Vec<Version> = Vec::new();
     if let Some(assets) = root.get("assets").and_then(|a| a.as_array()) {
         for asset in assets {
-            if let Some(name) = asset.get("name").and_then(|n| n.as_str()) {
-                if let Some(ver) = version_from_asset_name(name) {
-                    if let Ok(v) = Version::parse(&ver) {
-                        if v.pre.is_empty() {
-                            versions.push(v);
-                        }
-                    }
-                }
+            if let Some(name) = asset.get("name").and_then(|n| n.as_str())
+                && let Some(ver) = version_from_asset_name(name)
+                && let Ok(v) = Version::parse(&ver)
+                && v.pre.is_empty()
+            {
+                versions.push(v);
             }
         }
     }
