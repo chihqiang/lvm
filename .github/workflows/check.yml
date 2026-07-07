@@ -27,6 +27,11 @@ jobs:
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "${{ runner.os }}-rust-stable"
+          add-job-id-key: false
+          cache-targets: false
+          save-if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - name: Check format
         run: cargo fmt --all --check

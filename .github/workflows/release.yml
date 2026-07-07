@@ -43,7 +43,12 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.target }}
+          shared-key: "${{ runner.os }}-rust-stable"
+          prefix-key: "${{ matrix.target }}"
+          add-job-id-key: false
+          cache-targets: false
+          save-if: false
+
 
       - name: Install musl tools
         if: runner.os == 'Linux'
