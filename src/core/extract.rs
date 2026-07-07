@@ -54,6 +54,15 @@ fn extract_zip(zip_path: &Path, version_dir: &Path) -> Result<()> {
                 let mut outfile = fs::File::create(&out_path).context("Extraction failed")?;
                 std::io::copy(&mut entry, &mut outfile).context("Extraction failed")?;
             }
+
+            // Preserve Unix permissions from the zip entry
+            #[cfg(unix)]
+            if let Some(mode) = entry.unix_mode() {
+                use std::os::unix::fs::PermissionsExt;
+                if let Err(e) = fs::set_permissions(&out_path, fs::Permissions::from_mode(mode)) {
+                    report(format!("Warning: failed to set permissions for {}: {e}", out_path.display()));
+                }
+            }
         }
         Ok(())
     })();

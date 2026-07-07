@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, bail};
 
-use crate::config;
+use crate::config as lvm_config;
 use crate::language;
 
 use super::GoLanguage;
@@ -16,7 +16,8 @@ impl GoLanguage {
     }
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
-        let text = Self::fetch_versions_json()?;
+        let cache_file = lvm_config::cache_path(go_versions_cache_filename());
+        let text = language::fetch_with_cache(&cache_file, Self::fetch_versions_json)?;
         Self::parse_versions_json(&text)
     }
 
@@ -50,15 +51,14 @@ impl GoLanguage {
         Ok(checksum)
     }
 
+    /// Fetch version data from the Go JSON API.
+    /// Both go.dev and golang.google.cn support the same `/?mode=json&include=all` endpoint.
     fn fetch_versions_json() -> Result<String> {
-        let cache_file = config::cache_path(go_versions_cache_filename());
-        language::fetch_with_cache(&cache_file, || {
-            let url = format!("{}{}", go_mirror(), go_versions_query_suffix());
-            let response = language::get_url(&url)
-                .call()
-                .context("Failed to fetch Go versions")?;
-            response.into_string().context("Failed to read response")
-        })
+        let url = format!("{}{}", go_mirror(), go_versions_query_suffix());
+        let response = language::get_url(&url)
+            .call()
+            .context("Failed to fetch Go versions")?;
+        response.into_string().context("Failed to read response")
     }
 
     fn parse_versions_json(text: &str) -> Result<Vec<String>> {

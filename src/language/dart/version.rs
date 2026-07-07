@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use quick_xml::de::from_str;
 use serde::Deserialize;
 
-use crate::config;
+use crate::config as lvm_config;
 use crate::language;
 
 use super::config::{
@@ -28,7 +28,7 @@ struct S3Contents {
 
 impl super::DartLanguage {
     pub(crate) fn fetch_latest_version() -> Result<String> {
-        let cache_file = config::cache_path(dart_latest_version_cache_filename());
+        let cache_file = lvm_config::cache_path(dart_latest_version_cache_filename());
 
         let text = language::fetch_with_cache(&cache_file, || {
             let url = format!("{}/channels/stable/release/latest/VERSION", dart_mirror());
@@ -47,7 +47,7 @@ impl super::DartLanguage {
     }
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
-        let cache_file = config::cache_path(dart_versions_cache_filename());
+        let cache_file = lvm_config::cache_path(dart_versions_cache_filename());
 
         let text = language::fetch_with_cache(&cache_file, Self::fetch_s3_listing)?;
 

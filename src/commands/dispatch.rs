@@ -180,8 +180,12 @@ pub(crate) fn execute(
         Some(("cache", sub)) => match sub.subcommand() {
             Some(("dir", _)) => {
                 match config::downloads_dir() {
-                    Ok(d) => println!("{}", d.display()),
+                    Ok(d) => println!("Downloads:  {}", d.display()),
                     Err(e) => output::warn(format!("Cannot determine downloads directory: {e}")),
+                }
+                match config::cache_dir() {
+                    Ok(d) => println!("Cache:      {}", d.display()),
+                    Err(e) => output::warn(format!("Cannot determine cache directory: {e}")),
                 }
                 Ok(())
             }

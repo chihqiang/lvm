@@ -6,8 +6,9 @@ use anyhow::Result;
 /// 显示当前使用的版本
 pub(crate) fn current(registry: &LanguageRegistry, language: &str) -> Result<()> {
     let lang = get_language(registry, language)?;
+    let prefix = lang.version_prefix();
     match lang.current_version()? {
-        Some(ver) => output::info(format!("{language}: v{ver} (current)")),
+        Some(ver) => output::info(format!("{language}: {prefix}{ver} (current)")),
         None => output::info(format!("No active version for {language}")),
     }
     Ok(())
@@ -20,8 +21,14 @@ pub(crate) fn current_all(registry: &LanguageRegistry) -> Result<()> {
         output::info("No languages registered");
         return Ok(());
     }
+    let mut errors = Vec::new();
     for name in names {
-        current(registry, name)?;
+        if let Err(e) = current(registry, name) {
+            errors.push(format!("{}: {e}", name));
+        }
+    }
+    if !errors.is_empty() {
+        anyhow::bail!("Some languages failed:\n  {}", errors.join("\n  "));
     }
     Ok(())
 }

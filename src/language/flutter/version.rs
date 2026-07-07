@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 
-use crate::config;
+use crate::config as lvm_config;
 use crate::language;
 
 use super::config::{flutter_versions_cache_filename, releases_url};
@@ -31,7 +31,7 @@ fn parse_stable_versions(text: &str) -> Vec<semver::Version> {
 }
 
 fn fetch_releases_json() -> Result<String> {
-    let cache_file = config::cache_path(flutter_versions_cache_filename());
+    let cache_file = lvm_config::cache_path(flutter_versions_cache_filename());
     language::fetch_with_cache(&cache_file, || {
         let response = language::get_url(&releases_url())
             .call()

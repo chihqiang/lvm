@@ -5,6 +5,7 @@ use anyhow::{Context, Result, bail};
 use std::fs;
 
 use super::Language;
+use crate::config as lvm_config;
 use crate::language;
 
 pub(crate) use config::{go_mirror, go_packages_bin_path};
@@ -19,11 +20,11 @@ impl Language for GoLanguage {
     fn install(&self, version: Option<&str>) -> Result<String> {
         if let Some(v) = version {
             let v = v.trim();
-            if v.starts_with(crate::config::LTS_PREFIX) {
+            if v.starts_with(lvm_config::LTS_PREFIX) {
                 bail!("Go does not have LTS releases");
             }
-            if v == crate::config::SYSTEM_VERSION_KEYWORD {
-                bail!("'system' is not supported for Go");
+            if v == lvm_config::SYSTEM_VERSION_KEYWORD {
+                bail!("Use 'lvm use system' instead of 'lvm install system'");
             }
         }
         let resolved = language::resolve_version(
@@ -57,7 +58,7 @@ impl Language for GoLanguage {
             &|| self.is_installed(&version_dir),
             &mut |arch| {
                 let url = config::download_url(go_mirror(), &resolved, os, arch, ext);
-                let tar_path = crate::config::downloads_dir_or_default()
+                let tar_path = lvm_config::downloads_dir_or_default()
                     .join(config::tarball_filename(&resolved, os, arch, ext));
 
                 let verify_go_checksum = |tar_path: &std::path::Path| -> Result<()> {

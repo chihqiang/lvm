@@ -23,8 +23,15 @@ pub fn drain_reports() -> Vec<String> {
 }
 
 pub fn flush_reports_to_stdout() {
+    // Hold the report buffer lock while writing to stdout so that
+    // messages from parallel install threads don't interleave.
+    let mut buf = lock_report_buf();
+    let messages: Vec<String> = buf.drain(..).collect();
+    if messages.is_empty() {
+        return;
+    }
     let mut stdout = std::io::stdout().lock();
-    for msg in drain_reports() {
+    for msg in messages {
         let _ = writeln!(stdout, "{msg}");
     }
     let _ = stdout.flush();

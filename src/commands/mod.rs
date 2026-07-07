@@ -33,7 +33,9 @@ pub(crate) use use_version::use_version;
 pub(crate) use which::which;
 
 use anyhow::{Context, Result};
+use lvm::core::version::resolve_partial_version;
 use lvm::language::{self, Language, LanguageRegistry};
+use semver::Version;
 
 pub(crate) fn flush() {
     language::flush_reports_to_stdout();
@@ -47,6 +49,41 @@ pub(crate) fn get_language<'a>(
         let available = registry.list_names().join(config::LIST_SEPARATOR);
         format!("Unknown language '{name}', available: {available}")
     })
+}
+
+/// Resolve a version against locally installed releases when possible,
+/// avoiding network calls. Returns None if the version is not installed.
+pub(crate) fn try_resolve_installed_local(
+    p: &dyn Language,
+    version: &str,
+) -> Result<Option<String>> {
+    let candidate = version.trim().trim_start_matches('v');
+
+    if let Ok(ver) = Version::parse(candidate) {
+        let resolved = ver.to_string();
+        if p.is_installed(&p.version_dir(&resolved)) {
+            return Ok(Some(resolved));
+        }
+        return Ok(None);
+    }
+
+    let installed = p.list_installed()?;
+    if installed.is_empty() {
+        return Ok(None);
+    }
+
+    let avail: Vec<Version> = installed
+        .iter()
+        .filter_map(|s| Version::parse(s).ok())
+        .collect();
+    if avail.is_empty() {
+        return Ok(None);
+    }
+
+    match resolve_partial_version(candidate, &avail, p.name()) {
+        Ok(resolved) if p.is_installed(&p.version_dir(&resolved)) => Ok(Some(resolved)),
+        Ok(_) | Err(_) => Ok(None),
+    }
 }
 
 pub(crate) fn binary_dir(

@@ -201,6 +201,13 @@ pub fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()> {
 
     let resp = req.call().context("Download request failed")?;
     let status = resp.status();
+
+    // 416 Range Not Satisfiable: file is already fully downloaded
+    if status == 416 && existing > 0 {
+        report("File already fully downloaded");
+        return Ok(());
+    }
+
     if status != 200 && status != 206 {
         let body = resp.into_string().unwrap_or_default();
         bail!("Download failed (HTTP {status}): {body}")

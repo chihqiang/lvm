@@ -4,6 +4,7 @@ mod version;
 use anyhow::{Result, bail};
 
 use super::Language;
+use crate::config as lvm_config;
 use crate::core::extract;
 use crate::language;
 
@@ -30,7 +31,7 @@ impl Language for FlutterLanguage {
         let os = config::target_os();
         let arch = config::target_arch();
         let url = config::download_url(&resolved, os, arch);
-        let tar_path = crate::config::downloads_dir_or_default()
+        let tar_path = lvm_config::downloads_dir_or_default()
             .join(config::tarball_filename(&resolved, os, arch));
 
         language::download_and_install(
@@ -54,7 +55,7 @@ impl Language for FlutterLanguage {
     }
 
     fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
-        vec![self.current_link().join(crate::config::BIN_DIR)]
+        vec![self.current_link().join(lvm_config::BIN_DIR)]
     }
 
     fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
@@ -63,14 +64,10 @@ impl Language for FlutterLanguage {
             ("PUB_CACHE", self.current_link().join("pub-cache")),
         ]
     }
-
-    fn package_manager_binary(&self) -> Option<&'static str> {
-        Some("dart")
-    }
 }
 
 fn resolve_version(version: Option<&str>) -> Result<String> {
-    if version.is_some_and(|v| v.trim() == crate::config::SYSTEM_VERSION_KEYWORD) {
+    if version.is_some_and(|v| v.trim() == lvm_config::SYSTEM_VERSION_KEYWORD) {
         bail!("Use 'lvm use system' instead of 'lvm install system'");
     }
     language::resolve_version(

@@ -1,60 +1,147 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
+
+# ============================================================
+# Configuration
+# ============================================================
 
 BIN_NAME="lvm"
 INSTALL_DIR="${LVM_INSTALL_DIR:-/usr/local/bin}"
 LVM_DOWNLOAD_URL="${LVM_DOWNLOAD_URL:-https://github.com/chihqiang/lvm/releases/latest/download}"
 
-err() { printf "ERROR: %s\n" "$*" >&2; exit 1; }
-info() { printf "INFO:  %s\n" "$*"; }
+# ============================================================
+# Utilities
+# ============================================================
 
-detect_target() {
-  local os arch
+usage() {
+  cat <<USAGE
+lvm installer for macOS and Linux.
 
-  case "$(uname -s)" in
-    Linux)  os="unknown-linux-musl" ;;
-    Darwin) os="apple-darwin" ;;
-    *)      err "unsupported OS: $(uname -s)" ;;
-  esac
+Usage:
+  curl -fsSL https://raw.githubusercontent.com/chihqiang/lvm/main/install.sh | sh
 
-  case "$(uname -m)" in
-    x86_64|amd64) arch="x86_64" ;;
-    aarch64|arm64) arch="aarch64" ;;
-    *)            err "unsupported architecture: $(uname -m)" ;;
-  esac
+Environment:
+  LVM_INSTALL_DIR       Install directory. Default: /usr/local/bin
+  LVM_DOWNLOAD_URL      Custom release asset base URL. Default: latest release download URL
 
-  echo "${arch}-${os}"
+Examples:
+  curl -fsSL https://raw.githubusercontent.com/chihqiang/lvm/main/install.sh | sudo sh
+  curl -fsSL https://raw.githubusercontent.com/chihqiang/lvm/main/install.sh | LVM_INSTALL_DIR=/opt/bin sh
+USAGE
 }
 
-tmpdir=""
-trap 'rm -rf "${tmpdir:-}"' EXIT
-
-main() {
-  local target archive_url archive_name
-
-  target=$(detect_target)
-  archive_name="${BIN_NAME}-${target}.tar.gz"
-  archive_url="${LVM_DOWNLOAD_URL}/${archive_name}"
-
-  info "target: ${target}"
-
-  tmpdir=$(mktemp -d)
-
-  info "downloading ${archive_url}…"
-  curl -fSL --progress-bar -o "${tmpdir}/${archive_name}" "$archive_url"
-
-  info "extracting…"
-  tar xzf "${tmpdir}/${archive_name}" -C "$tmpdir"
-
-  info "installing to ${INSTALL_DIR}/${BIN_NAME}"
-  mkdir -p "$INSTALL_DIR"
-  install -m 755 "${tmpdir}/${BIN_NAME}" "${INSTALL_DIR}/${BIN_NAME}"
-
-  info "done — ${BIN_NAME} is ready"
-
-  printf "\nAdd the following to your shell config (~/.bashrc or ~/.zshrc):\n\n"
-  printf "  eval \"\$(lvm env)\"\n"
-  printf "  eval \"\$(lvm hook)\"\n"
+say() {
+  printf '%s\n' "$*"
 }
 
-main
+fail() {
+  printf 'lvm install: %s\n' "$*" >&2
+  exit 1
+}
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
+}
+
+download() {
+  url="$1"
+  out="$2"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$out"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q "$url" -O "$out"
+  else
+    fail "curl or wget is required"
+  fi
+}
+
+detect_platform() {
+  os="$(uname -s)"
+  arch="$(uname -m)"
+
+  case "$os" in
+    Darwin) platform="apple-darwin" ;;
+    Linux)  platform="unknown-linux-musl" ;;
+    *)      fail "unsupported OS: $os" ;;
+  esac
+
+  case "$arch" in
+    x86_64|amd64)  cpu="x86_64" ;;
+    aarch64|arm64) cpu="aarch64" ;;
+    *)             fail "unsupported CPU architecture: $arch" ;;
+  esac
+
+  printf '%s-%s' "$cpu" "$platform"
+}
+
+# Resolve sudo: use sudo only when the target directory is not writable.
+resolve_sudo() {
+  if [ -d "$INSTALL_DIR" ]; then
+    if [ ! -w "$INSTALL_DIR" ] ||
+      { [ -e "$INSTALL_DIR/$BIN_NAME" ] && [ ! -w "$INSTALL_DIR/$BIN_NAME" ]; }; then
+      need_cmd sudo
+      sudo_cmd="sudo"
+    fi
+  elif ! mkdir -p "$INSTALL_DIR" 2>/dev/null; then
+    need_cmd sudo
+    sudo mkdir -p "$INSTALL_DIR"
+    sudo_cmd="sudo"
+  fi
+}
+
+# ============================================================
+# Main
+# ============================================================
+
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+esac
+
+target="$(detect_platform)"
+archive_name="${BIN_NAME}-${target}.tar.gz"
+archive_url="${LVM_DOWNLOAD_URL}/${archive_name}"
+
+tmpdir="$(mktemp -d 2>/dev/null || mktemp -d -t lvm-install)"
+trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+say "Installing ${BIN_NAME} for ${target}"
+say "Release URL: ${LVM_DOWNLOAD_URL}"
+say "Install dir: ${INSTALL_DIR}"
+say ""
+
+download "$archive_url" "$tmpdir/$archive_name"
+say "Downloaded ${archive_name}"
+
+say "Extracting..."
+tar xzf "$tmpdir/$archive_name" -C "$tmpdir"
+
+sudo_cmd=""
+resolve_sudo
+
+# Atomic install: copy to a temp stage, then mv into place
+stage="$INSTALL_DIR/.${BIN_NAME}.$$"
+trap 'rm -rf "$tmpdir"; rm -f "$stage" 2>/dev/null || true' EXIT INT TERM
+
+$sudo_cmd cp "$tmpdir/$BIN_NAME" "$stage"
+$sudo_cmd chmod 755 "$stage"
+$sudo_cmd mv "$stage" "$INSTALL_DIR/$BIN_NAME"
+
+say ""
+say "Installed:"
+"$INSTALL_DIR/$BIN_NAME" --version || true
+
+# PATH hint
+case ":$PATH:" in
+  *":$INSTALL_DIR:"*) ;;
+  *)
+    say ""
+    say "Add $INSTALL_DIR to PATH to run ${BIN_NAME} from any terminal."
+    ;;
+esac
+
+# Shell integration hint
+say ""
+say "Add the following to your shell config (~/.bashrc or ~/.zshrc):"
+say ""
+say '  eval "$(lvm env)"'
+say '  eval "$(lvm hook)"'

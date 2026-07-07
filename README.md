@@ -220,7 +220,7 @@ lvm current rust
 | `lvm env --shell <bash\|zsh\|fish>` | Output shell completion script |
 | `lvm hook [--shell bash\|zsh\|fish\|powershell]` | Output shell auto-switch hook (bash: `PROMPT_COMMAND`, zsh: `chpwd`, fish: `--on-variable PWD`, powershell: `prompt`) |
 | `lvm prune <language> [--keep N]` | Remove all but N newest versions (skips current/default). Default keep=3 |
-| `lvm cache dir` | Show the download cache directory |
+| `lvm cache dir` | Show the download and cache directories |
 | `lvm cache clear` | Clear the download cache |
 | `lvm debug` | Show debug info (LVM_HOME, PATH, registered languages, current versions, etc.) |
 
@@ -314,8 +314,9 @@ Each language supports a custom mirror via environment variables:
 # Node.js
 export LVM_NODE_MIRROR=https://mirrors.ustc.edu.cn/node/
 
-# Go
-export LVM_GO_MIRROR=https://mirrors.aliyun.com/golang/
+# Go (supports go.dev and golang.google.cn)
+export LVM_GO_MIRROR=https://golang.google.cn/dl  # domestic mirror
+# export LVM_GO_MIRROR=https://go.dev/dl          # international mirror (default)
 
 # Java (Adoptium API, defaults to https://api.adoptium.net/v3)
 export LVM_JAVA_MIRROR=https://api.adoptium.net/v3

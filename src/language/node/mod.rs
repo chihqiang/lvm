@@ -9,6 +9,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 
 use super::Language;
+use crate::config as lvm_config;
 use crate::core::http::get_url;
 use crate::language;
 
@@ -32,12 +33,13 @@ impl Language for NodeLanguage {
             return Ok(resolved_version);
         }
 
+        let native_arch = config::target_arch();
         let archs: &[&str] = if source_is_url {
-            &[config::target_arch()]
-        } else if config::target_arch() != "x64" {
-            &[config::target_arch(), "x64"]
+            &[native_arch]
+        } else if native_arch != "x64" {
+            &[native_arch, "x64"]
         } else {
-            &[config::target_arch()]
+            &[native_arch]
         };
 
         let os = config::target_os();
@@ -54,76 +56,68 @@ impl Language for NodeLanguage {
             HashMap::new()
         };
 
-        for (i, &arch) in archs.iter().enumerate() {
-            if i > 0 && self.is_installed(&version_dir) {
-                return Ok(resolved_version);
-            }
-
-            let url = if source_is_url {
-                download_url.clone()
-            } else {
-                config::download_url(node_mirror(), &resolved_version, os, arch, ext)
-            };
-
-            let tar = if source_is_url {
-                let filename = url
-                    .rsplit('/')
-                    .next()
-                    .filter(|s| !s.is_empty())
-                    .unwrap_or("download.tar.gz");
-                crate::config::downloads_dir()?.join(filename)
-            } else {
-                crate::config::downloads_dir_or_default().join(config::tarball_filename(
-                    &resolved_version,
-                    os,
-                    arch,
-                    ext,
-                ))
-            };
-
-            let verify = |tar_path: &Path| -> Result<()> {
-                let tarball_filename = tar_path
-                    .file_name()
-                    .context(format!("Invalid tar path: {}", tar_path.display()))?
-                    .to_string_lossy();
-                if source_is_url {
-                    bail!(
-                        "No checksum entry for '{tarball_filename}'; custom Node URL cannot be verified"
-                    );
-                }
-                if let Some(expected) = checksums.get(tarball_filename.as_ref()) {
-                    language::report_verifying_checksum();
-                    language::verify_sha256(tar_path, expected)?;
-                    language::report_checksum_verified();
+        language::install_with_fallback(
+            "Node",
+            &resolved_version,
+            os,
+            native_arch,
+            archs,
+            &|| self.is_installed(&version_dir),
+            &mut |arch| {
+                let url = if source_is_url {
+                    download_url.clone()
                 } else {
-                    language::report(format!(
-                        "Warning: no checksum entry for '{tarball_filename}', verification skipped"
-                    ));
-                }
-                Ok(())
-            };
+                    config::download_url(node_mirror(), &resolved_version, os, arch, ext)
+                };
 
-            if arch != config::target_arch() {
-                language::report_non_native_arch(os, arch);
-            }
+                let tar = if source_is_url {
+                    let filename = url
+                        .rsplit('/')
+                        .next()
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or("download.tar.gz");
+                    lvm_config::downloads_dir()?.join(filename)
+                } else {
+                    lvm_config::downloads_dir_or_default().join(config::tarball_filename(
+                        &resolved_version,
+                        os,
+                        arch,
+                        ext,
+                    ))
+                };
 
-            match language::download_and_install(
-                &url,
-                &tar,
-                &resolved_version,
-                &version_dir,
-                "Node",
-                verify,
-            ) {
-                Ok(()) => return Ok(resolved_version),
-                Err(_e) if i + 1 < archs.len() => {
-                    language::report_fallback(arch, archs[i + 1]);
-                }
-                Err(e) => return Err(e),
-            }
-        }
+                let verify = |tar_path: &Path| -> Result<()> {
+                    let tarball_filename = tar_path
+                        .file_name()
+                        .context(format!("Invalid tar path: {}", tar_path.display()))?
+                        .to_string_lossy();
+                    if source_is_url {
+                        bail!(
+                            "No checksum entry for '{tarball_filename}'; custom Node URL cannot be verified"
+                        );
+                    }
+                    if let Some(expected) = checksums.get(tarball_filename.as_ref()) {
+                        language::report_verifying_checksum();
+                        language::verify_sha256(tar_path, expected)?;
+                        language::report_checksum_verified();
+                    } else {
+                        language::report(format!(
+                            "Warning: no checksum entry for '{tarball_filename}', verification skipped"
+                        ));
+                    }
+                    Ok(())
+                };
 
-        bail!("Failed to install Node {resolved_version}")
+                language::download_and_install(
+                    &url,
+                    &tar,
+                    &resolved_version,
+                    &version_dir,
+                    "Node",
+                    verify,
+                )
+            },
+        )
     }
 
     fn list_remote_versions(&self) -> Result<Vec<String>> {
@@ -168,8 +162,8 @@ impl Language for NodeLanguage {
     }
 
     fn post_install(&self, version: &str) -> Result<()> {
-        let version_dir = self.version_dir(self.strip_version_prefix(version));
-        let npm_path = version_dir.join(crate::config::BIN_DIR).join(format!(
+        let version_dir = self.version_dir(version);
+        let npm_path = version_dir.join(lvm_config::BIN_DIR).join(format!(
             "{}{}",
             npm_binary_name(),
             language::exe_suffix()
@@ -199,7 +193,7 @@ pub(crate) fn fetch_checksums(mirror_url: &str, version: &str) -> Result<HashMap
 }
 
 fn install_default_packages(npm_path: &Path) -> Result<()> {
-    let packages_file = crate::config::lvm_home()?.join(default_packages_filename());
+    let packages_file = lvm_config::lvm_home()?.join(default_packages_filename());
     if !packages_file.exists() {
         return Ok(());
     }
