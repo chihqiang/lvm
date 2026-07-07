@@ -6,6 +6,7 @@ use std::path::Path;
 use anyhow::{Result, bail};
 
 use super::Language;
+use crate::config as lvm_config;
 use crate::language;
 
 pub struct KotlinLanguage;
@@ -29,7 +30,7 @@ impl Language for KotlinLanguage {
 
         let url = config::download_url(&resolved);
         let tar_path =
-            crate::config::downloads_dir_or_default().join(config::tarball_filename(&resolved));
+            lvm_config::downloads_dir_or_default().join(config::tarball_filename(&resolved));
 
         match language::download_and_install(
             &url,
@@ -45,13 +46,13 @@ impl Language for KotlinLanguage {
     }
 
     fn is_installed(&self, version_dir: &Path) -> bool {
-        let bin = crate::config::BIN_DIR;
+        let bin = lvm_config::BIN_DIR;
         version_dir.join(bin).join("kotlinc").exists()
             || version_dir.join(bin).join("kotlinc.bat").exists()
     }
 
     fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
-        vec![self.current_link().join(crate::config::BIN_DIR)]
+        vec![self.current_link().join(lvm_config::BIN_DIR)]
     }
 
     fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
@@ -72,8 +73,8 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
         None => KotlinLanguage::fetch_latest_version(),
         Some(v) => {
             let v = v.trim();
-            if v == crate::config::SYSTEM_VERSION_KEYWORD {
-                bail!("'system' is not supported for Kotlin");
+            if v == lvm_config::SYSTEM_VERSION_KEYWORD {
+                bail!("Use 'lvm use system' instead of 'lvm install system'");
             }
             let candidate = v.trim_start_matches('v');
             if let Ok(ver) = semver::Version::parse(candidate) {

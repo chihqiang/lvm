@@ -22,4 +22,7 @@ pub use report::{
     flush_reports_to_stdout, report, report_already_installed, report_checksum_verified,
     report_fallback, report_non_native_arch, report_verifying_checksum,
 };
-pub use version::{parse_github_releases, resolve_partial_version, resolve_version, sort_versions};
+pub use version::{
+    fetch_github_releases_paginated, parse_github_releases, resolve_partial_version,
+    resolve_version, sort_versions,
+};

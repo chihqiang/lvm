@@ -18,13 +18,18 @@ pub fn report(msg: impl Into<String>) {
     lock_report_buf().push(msg.into());
 }
 
-pub fn drain_reports() -> Vec<String> {
-    lock_report_buf().drain(..).collect()
-}
-
 pub fn flush_reports_to_stdout() {
+    let mut buf = lock_report_buf();
+
+    if buf.is_empty() {
+        return;
+    }
+
+    let messages: Vec<String> = buf.drain(..).collect();
+    // Lock is held (via buf) for the entire write to prevent
+    // interleaved output from parallel install threads.
     let mut stdout = std::io::stdout().lock();
-    for msg in drain_reports() {
+    for msg in messages {
         let _ = writeln!(stdout, "{msg}");
     }
     let _ = stdout.flush();

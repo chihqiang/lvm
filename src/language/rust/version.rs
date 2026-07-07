@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 
-use crate::config;
+use crate::config as lvm_config;
 use crate::language;
 
 use super::config::rust_versions_cache_filename;
@@ -14,14 +14,7 @@ impl super::RustLanguage {
     }
 
     pub(crate) fn fetch_all_versions() -> Result<Vec<String>> {
-        let cache_file = config::cache_path(rust_versions_cache_filename());
-        let text = language::fetch_with_cache(&cache_file, || {
-            let response = language::get_url(RUST_VERSIONS_URL)
-                .call()
-                .context("Failed to fetch Rust versions")?;
-            response.into_string().context("Failed to read response")
-        })?;
-
-        language::parse_github_releases(&text)
+        let cache_file = lvm_config::cache_path(rust_versions_cache_filename());
+        language::fetch_github_releases_paginated(RUST_VERSIONS_URL, &cache_file)
     }
 }

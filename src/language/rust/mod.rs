@@ -7,6 +7,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 
 use super::Language;
+use crate::config as lvm_config;
 use crate::language;
 
 pub struct RustLanguage;
@@ -50,7 +51,7 @@ impl Language for RustLanguage {
             &mut |arch| {
                 let target = config::target_triple(os, arch);
                 let url = config::download_url(&resolved, &target);
-                let tar_path = crate::config::downloads_dir_or_default()
+                let tar_path = lvm_config::downloads_dir_or_default()
                     .join(config::tarball_filename(&resolved, &target));
                 language::download_and_install(
                     &url,
@@ -59,25 +60,24 @@ impl Language for RustLanguage {
                     &version_dir,
                     "Rust",
                     |_| Ok(()),
-                )?;
-                self.post_install(&resolved)
+                )
             },
         )
     }
 
     fn is_installed(&self, version_dir: &Path) -> bool {
-        let bin = crate::config::BIN_DIR;
+        let bin = lvm_config::BIN_DIR;
         version_dir.join(bin).join("rustc").exists()
             || version_dir.join("rustc").join(bin).join("rustc").exists()
     }
 
     fn post_install(&self, version: &str) -> Result<()> {
         let version_dir = self.version_dir(version);
-        let bin_dir = version_dir.join(crate::config::BIN_DIR);
+        let bin_dir = version_dir.join(lvm_config::BIN_DIR);
         fs::create_dir_all(&bin_dir).context("Failed to create bin directory")?;
 
         for sub_dir in &["rustc", "cargo"] {
-            let src_bin = version_dir.join(sub_dir).join(crate::config::BIN_DIR);
+            let src_bin = version_dir.join(sub_dir).join(lvm_config::BIN_DIR);
             if !src_bin.exists() {
                 continue;
             }
@@ -98,13 +98,13 @@ impl Language for RustLanguage {
     fn post_switch(&self, version: &str) -> Result<()> {
         let version_dir = self.version_dir(version);
         let exe = language::exe_suffix();
-        let bin_home = crate::config::lvm_home()
-            .expect("LVM home directory is required")
-            .join(crate::config::BIN_DIR);
+        let bin_home = lvm_config::lvm_home()
+            .context("LVM home directory is required")?
+            .join(lvm_config::BIN_DIR);
 
         let cargo_target = version_dir
             .join("cargo")
-            .join(crate::config::BIN_DIR)
+            .join(lvm_config::BIN_DIR)
             .join(format!("cargo{exe}"));
         let cargo_link = bin_home.join(format!("cargo{exe}"));
         crate::core::fslink::replace_symlink(&cargo_target, &cargo_link)
@@ -114,7 +114,7 @@ impl Language for RustLanguage {
     }
 
     fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
-        vec![self.current_link().join(crate::config::BIN_DIR)]
+        vec![self.current_link().join(lvm_config::BIN_DIR)]
     }
 
     fn list_remote_versions(&self) -> Result<Vec<String>> {
@@ -127,8 +127,8 @@ impl Language for RustLanguage {
 }
 
 fn resolve_version(version: Option<&str>) -> Result<String> {
-    if version.is_some_and(|v| v.trim() == crate::config::SYSTEM_VERSION_KEYWORD) {
-        bail!("'system' is not supported for Rust");
+    if version.is_some_and(|v| v.trim() == lvm_config::SYSTEM_VERSION_KEYWORD) {
+        bail!("Use 'lvm use system' instead of 'lvm install system'");
     }
     language::resolve_version(
         "Rust",

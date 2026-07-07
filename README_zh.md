@@ -220,7 +220,7 @@ lvm current rust
 | `lvm env --shell <bash\|zsh\|fish>` | 输出对应 shell 的补全脚本 |
 | `lvm hook [--shell bash\|zsh\|fish\|powershell]` | 输出 shell 自动切换 hook（bash: `PROMPT_COMMAND`，zsh: `chpwd`，fish: `--on-variable PWD`，powershell: `prompt`） |
 | `lvm prune <language> [--keep N]` | 删除旧版本，保留最新的 N 个（跳过 current/default）。默认 keep=3 |
-| `lvm cache dir` | 显示下载缓存目录 |
+| `lvm cache dir` | 显示下载缓存和版本列表缓存目录 |
 | `lvm cache clear` | 清空下载缓存 |
 | `lvm debug` | 显示调试信息（LVM_HOME、PATH、已注册语言、当前版本等） |
 
@@ -314,8 +314,9 @@ eslint
 # Node.js
 export LVM_NODE_MIRROR=https://mirrors.ustc.edu.cn/node/
 
-# Go
-export LVM_GO_MIRROR=https://mirrors.aliyun.com/golang/
+# Go（支持 go.dev 和 golang.google.cn）
+export LVM_GO_MIRROR=https://golang.google.cn/dl  # 国内镜像
+# export LVM_GO_MIRROR=https://go.dev/dl          # 国际镜像（默认）
 
 # Java（Adoptium API，默认 https://api.adoptium.net/v3）
 export LVM_JAVA_MIRROR=https://api.adoptium.net/v3

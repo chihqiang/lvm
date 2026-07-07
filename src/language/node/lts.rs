@@ -10,16 +10,22 @@ pub(crate) struct LtsInfo {
     pub(crate) ordered: Vec<(String, Option<String>)>,
 }
 
+/// Column indices in Node's index.tab format.
+/// Format: version\tdate\tfiles\tnpm\tv8\tuv\tzlib\topenssl\tmodules\tlts
+const COL_VERSION: usize = 0;
+const COL_LTS: usize = 9;
+const MIN_COLUMNS: usize = 10;
+
 pub(crate) fn parse_lts_info(text: &str) -> Vec<(String, Option<String>)> {
     text.lines()
         .skip(1)
         .filter_map(|line| {
             let parts: Vec<&str> = line.split('\t').collect();
-            if parts.len() < 10 {
+            if parts.len() < MIN_COLUMNS {
                 return None;
             }
-            let version = parts[0].strip_prefix('v')?;
-            let lts = parts.get(9).and_then(|s| {
+            let version = parts[COL_VERSION].strip_prefix('v')?;
+            let lts = parts.get(COL_LTS).and_then(|s| {
                 let s = s.trim();
                 if s.is_empty() {
                     None

@@ -39,6 +39,41 @@ pub fn parse_github_releases(json: &str) -> Result<Vec<String>> {
     Ok(versions.into_iter().map(|v| v.to_string()).collect())
 }
 
+/// Fetch all stable versions from a GitHub releases API endpoint with pagination.
+/// `base_url` should already include `?per_page=100`. Pages are fetched until
+/// fewer than 100 results are returned. Results are cached via `cache_file`.
+pub fn fetch_github_releases_paginated(
+    base_url: &str,
+    cache_file: &std::path::Path,
+) -> Result<Vec<String>> {
+    use crate::core::http::{fetch_with_cache, get_url};
+
+    let text = fetch_with_cache(cache_file, || {
+        let mut all_versions = Vec::new();
+        let separator = if base_url.contains('?') { "&" } else { "?" };
+
+        for page in 1..=10 {
+            let url = format!("{base_url}{separator}page={page}");
+            let response = get_url(&url)
+                .call()
+                .context("Failed to fetch GitHub releases")?;
+            let page_text = response
+                .into_string()
+                .context("Failed to read GitHub releases response")?;
+            let versions = parse_github_releases(&page_text)?;
+            let count = versions.len();
+            all_versions.extend(versions);
+            if count < 100 {
+                break;
+            }
+        }
+
+        Ok(all_versions.join("\n"))
+    })?;
+
+    Ok(text.lines().map(String::from).collect())
+}
+
 /// Resolve a version string for a language.
 ///
 /// If `version` is `None`, calls `fetch_latest`.
@@ -104,7 +139,11 @@ pub fn resolve_partial_version(candidate: &str, avail: &[Version], lang: &str) -
     match best {
         Some(v) => Ok(v.to_string()),
         None => {
-            let mut similar = avail
+            // Sort a copy so the suggestion is always newest-first regardless
+            // of whether the caller pre-sorted `avail`.
+            let mut sorted: Vec<&Version> = avail.iter().collect();
+            sorted.sort();
+            let mut similar = sorted
                 .iter()
                 .rev()
                 .map(|v| v.to_string())

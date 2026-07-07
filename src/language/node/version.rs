@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail};
 use semver::Version;
 
-use crate::config;
+use crate::config as lvm_config;
 use crate::language;
 
 use super::NodeLanguage;
@@ -81,11 +81,11 @@ impl NodeLanguage {
             let version = Self::version_from_url(v)?;
             return Ok((v.to_string(), version, true));
         }
-        if let Some(desc) = v.strip_prefix(config::LTS_PREFIX) {
+        if let Some(desc) = v.strip_prefix(lvm_config::LTS_PREFIX) {
             let resolved = lts::resolve_lts(desc)?;
             return Ok((Self::download_url(&resolved), resolved, false));
         }
-        if v == config::SYSTEM_VERSION_KEYWORD {
+        if v == lvm_config::SYSTEM_VERSION_KEYWORD {
             bail!("Use 'lvm use system' instead of 'lvm install system'");
         }
         let candidate = v.trim_start_matches('v');
@@ -103,6 +103,6 @@ impl NodeLanguage {
 }
 
 pub(crate) fn fetch_index_tab() -> Result<String> {
-    let cache_file = config::cache_path(node_versions_cache_filename());
+    let cache_file = lvm_config::cache_path(node_versions_cache_filename());
     language::fetch_with_cache(&cache_file, || NodeLanguage::fetch_text(index_tab_path()))
 }

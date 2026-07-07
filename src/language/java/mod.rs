@@ -5,6 +5,7 @@ use anyhow::{Result, bail};
 use std::path::Path;
 
 use super::Language;
+use crate::config as lvm_config;
 use crate::language;
 
 pub struct JavaLanguage;
@@ -27,7 +28,7 @@ impl Language for JavaLanguage {
         }
 
         let (download_url, tarball_name, checksum_hex) = version::fetch_download_info(&resolved)?;
-        let tar_path = crate::config::downloads_dir_or_default().join(&tarball_name);
+        let tar_path = lvm_config::downloads_dir_or_default().join(&tarball_name);
 
         let verify_java_checksum = |tar_path: &Path| -> Result<()> {
             language::report_verifying_checksum();
@@ -65,7 +66,7 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
         None => version::fetch_latest_lts_version(),
         Some(v) => {
             let v = v.trim().trim_start_matches('v');
-            if v == crate::config::SYSTEM_VERSION_KEYWORD {
+            if v == lvm_config::SYSTEM_VERSION_KEYWORD {
                 bail!("Use 'lvm use system' instead of 'lvm install system'");
             }
             if let Ok(major) = v.parse::<i32>()

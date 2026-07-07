@@ -14,11 +14,11 @@ use anyhow::{Result, bail};
 
 pub use crate::core::{
     CURRENT_DEFAULT_MARKER, CURRENT_MARKER, DEFAULT_MARKER, archive_ext, download_and_install,
-    exe_suffix, fetch_from_mirror, fetch_with_cache, flush_reports_to_stdout, get_url,
-    parse_github_releases, path_separator, remove_symlink, report, report_already_installed,
-    report_checksum_verified, report_fallback, report_non_native_arch, report_verifying_checksum,
-    resolve_partial_version, resolve_version, set_offline, set_parallel_downloads, sort_versions,
-    verify_sha256,
+    exe_suffix, fetch_from_mirror, fetch_github_releases_paginated, fetch_with_cache,
+    flush_reports_to_stdout, get_url, parse_github_releases, path_separator, remove_symlink,
+    report, report_already_installed, report_checksum_verified, report_fallback,
+    report_non_native_arch, report_verifying_checksum, resolve_partial_version, resolve_version,
+    set_offline, set_parallel_downloads, sort_versions, verify_sha256,
 };
 pub use language_trait::Language;
 pub use registry::LanguageRegistry;
