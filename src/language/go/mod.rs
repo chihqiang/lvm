@@ -1,0 +1,104 @@
+pub(crate) mod config;
+mod version;
+
+use anyhow::{Context, Result};
+use std::fs;
+
+use super::Language;
+use crate::config as lvm_config;
+use crate::language;
+
+pub(crate) use config::{go_mirror, go_packages_bin_path};
+
+pub struct GoLanguage;
+
+impl Language for GoLanguage {
+    fn name(&self) -> &'static str {
+        "go"
+    }
+
+    fn install(&self, version: Option<&str>) -> Result<String> {
+        language::reject_lts_install("Go", version)?;
+        language::reject_system_install(version)?;
+        let resolved = language::resolve_version(
+            "Go",
+            version,
+            &|| GoLanguage::fetch_latest_version(),
+            &|| GoLanguage::fetch_all_versions(),
+        )?;
+
+        if self.skip_if_installed(&resolved)? {
+            return Ok(resolved);
+        }
+        let version_dir = self.version_dir(&resolved);
+
+        let os = config::target_os();
+        let native_arch = config::target_arch();
+        let ext = language::archive_ext();
+        let archs: &[&str] = if native_arch != "amd64" {
+            &[native_arch, "amd64"]
+        } else {
+            &[native_arch]
+        };
+
+        language::install_with_fallback(
+            "Go",
+            &resolved,
+            os,
+            native_arch,
+            archs,
+            &|| self.is_installed(&version_dir),
+            &mut |arch| {
+                let url = config::download_url(go_mirror(), &resolved, os, arch, ext);
+                let tar_path = lvm_config::downloads_dir_or_default()
+                    .join(config::tarball_filename(&resolved, os, arch, ext));
+
+                let verify_go_checksum = |tar_path: &std::path::Path| -> Result<()> {
+                    let filename = tar_path
+                        .file_name()
+                        .context(format!("Invalid tar path: {}", tar_path.display()))?
+                        .to_string_lossy();
+                    let expected = Self::fetch_file_sha256(&resolved, filename.as_ref())?;
+                    language::report_verifying_checksum();
+                    language::verify_sha256(tar_path, &expected)?;
+                    language::report_checksum_verified();
+                    Ok(())
+                };
+
+                language::download_and_install(
+                    &url,
+                    &tar_path,
+                    &resolved,
+                    &version_dir,
+                    "Go",
+                    verify_go_checksum,
+                )
+            },
+        )
+    }
+
+    fn post_switch(&self, version: &str) -> Result<()> {
+        let version_dir = self.version_dir(version);
+        let (packages_dir, bin_dir_name) = go_packages_bin_path();
+        let packages_bin = version_dir.join(packages_dir).join(bin_dir_name);
+        fs::create_dir_all(&packages_bin).context("Failed to create Go packages directory")
+    }
+
+    fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
+        let (pkgs, bin) = go_packages_bin_path();
+        vec![self.current_link().join(pkgs).join(bin)]
+    }
+
+    fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
+        let (pkgs, _) = go_packages_bin_path();
+        vec![("GOPATH", self.current_link().join(pkgs))]
+    }
+
+    fn list_remote_versions(&self) -> Result<Vec<String>> {
+        Self::fetch_all_versions()
+    }
+
+    fn latest_version(&self) -> Result<String> {
+        Self::fetch_latest_version()
+    }
+}

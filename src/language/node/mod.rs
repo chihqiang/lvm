@@ -1,0 +1,230 @@
+pub(crate) mod config;
+pub(crate) mod lts;
+mod nvmrc;
+mod version;
+
+use std::collections::HashMap;
+use std::path::Path;
+
+use anyhow::{Context, Result, bail};
+
+use super::Language;
+use crate::config as lvm_config;
+use crate::core::http::get_url;
+use crate::language;
+
+pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
+pub use nvmrc::{read_nvmrc, resolve_nvmrc_version};
+
+/// Node.js language
+pub struct NodeLanguage;
+
+impl Language for NodeLanguage {
+    fn name(&self) -> &'static str {
+        "node"
+    }
+
+    fn install(&self, version: Option<&str>) -> Result<String> {
+        let (download_url, resolved_version, source_is_url) =
+            NodeLanguage::resolve_install_version(version)?;
+        if self.skip_if_installed(&resolved_version)? {
+            return Ok(resolved_version);
+        }
+        let version_dir = self.version_dir(&resolved_version);
+
+        let native_arch = config::target_arch();
+        let archs: &[&str] = if source_is_url {
+            &[native_arch]
+        } else if native_arch != "x64" {
+            &[native_arch, "x64"]
+        } else {
+            &[native_arch]
+        };
+
+        let os = config::target_os();
+        let ext = language::archive_ext();
+
+        let checksums: HashMap<String, String> = if !source_is_url {
+            fetch_checksums(node_mirror(), &resolved_version).unwrap_or_else(|e| {
+                language::report(format!(
+                    "Warning: could not fetch checksums ({e}), verification skipped"
+                ));
+                HashMap::new()
+            })
+        } else {
+            HashMap::new()
+        };
+
+        language::install_with_fallback(
+            "Node",
+            &resolved_version,
+            os,
+            native_arch,
+            archs,
+            &|| self.is_installed(&version_dir),
+            &mut |arch| {
+                let url = if source_is_url {
+                    download_url.clone()
+                } else {
+                    config::download_url(node_mirror(), &resolved_version, os, arch, ext)
+                };
+
+                let tar = if source_is_url {
+                    let filename = url
+                        .rsplit('/')
+                        .next()
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or("download.tar.gz");
+                    lvm_config::downloads_dir()?.join(filename)
+                } else {
+                    lvm_config::downloads_dir_or_default().join(config::tarball_filename(
+                        &resolved_version,
+                        os,
+                        arch,
+                        ext,
+                    ))
+                };
+
+                let verify = |tar_path: &Path| -> Result<()> {
+                    let tarball_filename = tar_path
+                        .file_name()
+                        .context(format!("Invalid tar path: {}", tar_path.display()))?
+                        .to_string_lossy();
+                    if source_is_url {
+                        bail!(
+                            "No checksum entry for '{tarball_filename}'; custom Node URL cannot be verified"
+                        );
+                    }
+                    if let Some(expected) = checksums.get(tarball_filename.as_ref()) {
+                        language::report_verifying_checksum();
+                        language::verify_sha256(tar_path, expected)?;
+                        language::report_checksum_verified();
+                    } else {
+                        language::report(format!(
+                            "Warning: no checksum entry for '{tarball_filename}', verification skipped"
+                        ));
+                    }
+                    Ok(())
+                };
+
+                language::download_and_install(
+                    &url,
+                    &tar,
+                    &resolved_version,
+                    &version_dir,
+                    "Node",
+                    verify,
+                )
+            },
+        )
+    }
+
+    fn list_remote_versions(&self) -> Result<Vec<String>> {
+        let text = version::fetch_index_tab()?;
+        let mut versions = NodeLanguage::parse_index_tab(&text);
+        language::sort_versions(&mut versions);
+
+        let lts_info: HashMap<String, String> = lts::parse_lts_info(&text)
+            .into_iter()
+            .filter_map(|(v, lts)| lts.map(|c| (v, c)))
+            .collect();
+
+        Ok(versions
+            .into_iter()
+            .map(|v| {
+                if let Some(codename) = lts_info.get(&v) {
+                    format!("{v} (LTS: {codename})")
+                } else {
+                    v
+                }
+            })
+            .collect())
+    }
+
+    fn latest_version(&self) -> Result<String> {
+        NodeLanguage::fetch_latest_version()
+    }
+
+    fn package_manager_binary(&self) -> Option<&'static str> {
+        Some("npm")
+    }
+
+    fn packages_dir_name(&self) -> Option<&'static str> {
+        Some("node_modules")
+    }
+
+    fn rc_version(&self) -> Result<Option<String>> {
+        match read_nvmrc()? {
+            Some(v) if !v.is_empty() => resolve_nvmrc_version(&v).map(Some),
+            _ => Ok(None),
+        }
+    }
+
+    fn post_install(&self, version: &str) -> Result<()> {
+        let version_dir = self.version_dir(version);
+        let npm_path = version_dir.join(lvm_config::BIN_DIR).join(format!(
+            "{}{}",
+            npm_binary_name(),
+            language::exe_suffix()
+        ));
+        install_default_packages(&npm_path)
+    }
+}
+
+pub(crate) fn fetch_checksums(mirror_url: &str, version: &str) -> Result<HashMap<String, String>> {
+    let url = format!("{mirror_url}/v{version}/SHASUMS256.txt");
+    let response = get_url(&url).call().context("Failed to fetch checksums")?;
+    let text = response.into_string().context("Failed to read checksums")?;
+
+    let mut map = HashMap::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let mut parts = line.split_whitespace();
+        if let (Some(checksum), Some(filename)) = (parts.next(), parts.next()) {
+            map.insert(filename.to_string(), checksum.to_string());
+        }
+    }
+    Ok(map)
+}
+
+fn install_default_packages(npm_path: &Path) -> Result<()> {
+    let packages_file = lvm_config::lvm_home()?.join(default_packages_filename());
+    if !packages_file.exists() {
+        return Ok(());
+    }
+
+    let content =
+        std::fs::read_to_string(&packages_file).context("Failed to read default-packages")?;
+
+    let packages: Vec<&str> = content
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .collect();
+
+    if packages.is_empty() {
+        return Ok(());
+    }
+
+    language::report("Installing default packages...");
+    let output = std::process::Command::new(npm_path)
+        .args(["install", "-g", "--quiet"])
+        .args(&packages)
+        .output()
+        .context("Failed to install default packages")?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stderr = stderr.trim();
+        if stderr.is_empty() {
+            bail!("Failed to install some default packages");
+        }
+        bail!("Failed to install some default packages:\n{stderr}");
+    }
+
+    language::report("Default packages installed");
+    Ok(())
+}

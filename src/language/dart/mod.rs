@@ -1,0 +1,88 @@
+pub(crate) mod config;
+mod version;
+
+use anyhow::Result;
+
+use super::Language;
+use crate::config as lvm_config;
+use crate::core::extract;
+use crate::language;
+
+pub struct DartLanguage;
+
+impl Language for DartLanguage {
+    fn name(&self) -> &'static str {
+        "dart"
+    }
+
+    fn version_prefix(&self) -> &'static str {
+        ""
+    }
+
+    fn install(&self, version: Option<&str>) -> Result<String> {
+        let resolved = resolve_version(version)?;
+        if self.skip_if_installed(&resolved)? {
+            return Ok(resolved);
+        }
+        let version_dir = self.version_dir(&resolved);
+        let os = config::target_os();
+        let native_arch = config::target_arch();
+        let archs: &[&str] = if native_arch != "x64" {
+            &[native_arch, "x64"]
+        } else {
+            &[native_arch]
+        };
+
+        language::install_with_fallback(
+            "Dart",
+            &resolved,
+            os,
+            native_arch,
+            archs,
+            &|| self.is_installed(&version_dir),
+            &mut |arch| {
+                let url = config::download_url(&resolved, os, arch);
+                let tar_path = lvm_config::downloads_dir_or_default()
+                    .join(config::tarball_filename(&resolved, os, arch));
+
+                language::download_and_install(
+                    &url,
+                    &tar_path,
+                    &resolved,
+                    &version_dir,
+                    "Dart",
+                    extract::verify_zip_archive,
+                )
+            },
+        )
+    }
+
+    fn list_remote_versions(&self) -> Result<Vec<String>> {
+        Self::fetch_all_versions()
+    }
+
+    fn latest_version(&self) -> Result<String> {
+        Self::fetch_latest_version()
+    }
+
+    fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
+        vec![self.current_link().join(lvm_config::BIN_DIR)]
+    }
+
+    fn env_extra_vars(&self) -> Vec<(&'static str, std::path::PathBuf)> {
+        vec![
+            ("DART_HOME", self.current_link()),
+            ("PUB_CACHE", self.current_link().join("pub-cache")),
+        ]
+    }
+}
+
+fn resolve_version(version: Option<&str>) -> Result<String> {
+    language::reject_system_install(version)?;
+    language::resolve_version(
+        "Dart",
+        version,
+        &|| DartLanguage::fetch_latest_version(),
+        &|| DartLanguage::fetch_all_versions(),
+    )
+}
