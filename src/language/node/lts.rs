@@ -83,16 +83,12 @@ pub(crate) fn get_lts_info() -> Result<&'static LtsInfo> {
             }
         }
     } else {
-        match version::fetch_index_tab() {
-            Ok(text) => {
-                let info = build_lts_info(&text);
-                if let Err(e) = save_lts_cache(&info) {
-                    report(format!("Warning: failed to write LTS cache: {e:#}"));
-                }
-                info
-            }
-            Err(e) => return Err(e),
+        let text = version::fetch_index_tab()?;
+        let info = build_lts_info(&text);
+        if let Err(e) = save_lts_cache(&info) {
+            report(format!("Warning: failed to write LTS cache: {e:#}"));
         }
+        info
     };
 
     // Only the first thread's result is stored; subsequent calls return the cached value
