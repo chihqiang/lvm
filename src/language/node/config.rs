@@ -64,6 +64,10 @@ pub(crate) fn node_versions_cache_filename() -> &'static str {
     "node-versions.tab"
 }
 
+pub(crate) fn node_latest_cache_filename() -> &'static str {
+    "node-latest.txt"
+}
+
 impl NodeLanguage {
     pub(crate) fn download_url(version: &str) -> String {
         download_url(

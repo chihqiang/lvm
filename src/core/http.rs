@@ -219,10 +219,19 @@ pub fn fetch_with_cache(
     cache_file: &Path,
     fetch_fn: impl FnOnce() -> Result<String>,
 ) -> Result<String> {
+    fetch_with_cache_ttl(cache_file, CACHE_TTL, fetch_fn)
+}
+
+/// Like [`fetch_with_cache`], but with an explicit cache TTL.
+pub fn fetch_with_cache_ttl(
+    cache_file: &Path,
+    ttl: Duration,
+    fetch_fn: impl FnOnce() -> Result<String>,
+) -> Result<String> {
     if let Ok(meta) = fs::metadata(cache_file)
         && let Ok(modified) = meta.modified()
         && let Ok(elapsed) = modified.elapsed()
-        && elapsed < CACHE_TTL
+        && elapsed < ttl
     {
         return fs::read_to_string(cache_file).context("Failed to read cache");
     }
