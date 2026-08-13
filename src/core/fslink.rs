@@ -131,6 +131,7 @@ pub fn uninstall_version(
     version_dir: &Path,
     current_link: &Path,
     bin_link: &Path,
+    extra_links: &[std::path::PathBuf],
     current: Option<&str>,
     version: &str,
 ) -> Result<()> {
@@ -138,17 +139,16 @@ pub fn uninstall_version(
         bail!("{version} is not installed")
     }
     if current == Some(version) {
-        if let Err(e) = remove_symlink(current_link) {
-            report(format!(
-                "Warning: failed to remove symlink {}: {e}",
-                current_link.display()
-            ));
-        }
-        if let Err(e) = remove_symlink(bin_link) {
-            report(format!(
-                "Warning: failed to remove symlink {}: {e}",
-                bin_link.display()
-            ));
+        for link in std::iter::once(current_link)
+            .chain(std::iter::once(bin_link))
+            .chain(extra_links.iter().map(std::path::PathBuf::as_path))
+        {
+            if let Err(e) = remove_symlink(link) {
+                report(format!(
+                    "Warning: failed to remove symlink {}: {e}",
+                    link.display()
+                ));
+            }
         }
     }
     fs::remove_dir_all(version_dir).context("Failed to uninstall")?;

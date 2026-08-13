@@ -189,6 +189,11 @@ pub fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()> {
 
     let existing = fs::metadata(dest).map_or(0, |m| m.len());
     let (resp, is_resume, total) = prepare_download(url, existing)?;
+    // 416 Range Not Satisfiable means the existing file is already complete;
+    // leave it untouched instead of truncating and rewriting it.
+    if resp.status() == 416 {
+        return Ok(());
+    }
     let mut file = open_dest_file(dest, is_resume, existing)?;
 
     if !is_resume && existing > 0 {
@@ -214,10 +219,19 @@ pub fn fetch_with_cache(
     cache_file: &Path,
     fetch_fn: impl FnOnce() -> Result<String>,
 ) -> Result<String> {
+    fetch_with_cache_ttl(cache_file, CACHE_TTL, fetch_fn)
+}
+
+/// Like [`fetch_with_cache`], but with an explicit cache TTL.
+pub fn fetch_with_cache_ttl(
+    cache_file: &Path,
+    ttl: Duration,
+    fetch_fn: impl FnOnce() -> Result<String>,
+) -> Result<String> {
     if let Ok(meta) = fs::metadata(cache_file)
         && let Ok(modified) = meta.modified()
         && let Ok(elapsed) = modified.elapsed()
-        && elapsed < CACHE_TTL
+        && elapsed < ttl
     {
         return fs::read_to_string(cache_file).context("Failed to read cache");
     }
@@ -252,7 +266,16 @@ fn prepare_download(url: &str, existing: u64) -> Result<(ureq::Response, bool, u
         req = req.set("Range", &format!("bytes={existing}-"));
     }
 
-    let resp = req.call().context("Download request failed")?;
+    // ureq returns 4xx/5xx as Err(Error::Status). Treat 416 (file already
+    // complete) as success so the caller leaves the existing file untouched.
+    let resp = match req.call() {
+        Ok(r) => r,
+        Err(ureq::Error::Status(416, r)) if existing > 0 => {
+            report("File already fully downloaded");
+            return Ok((r, false, 0));
+        }
+        Err(e) => return Err(e).context("Download request failed"),
+    };
     let status = resp.status();
 
     // 416 Range Not Satisfiable: file is already fully downloaded

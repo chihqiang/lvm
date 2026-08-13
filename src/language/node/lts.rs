@@ -1,14 +1,23 @@
 use std::collections::HashMap;
+use std::fs;
 use std::sync::OnceLock;
+use std::time::Duration;
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow, bail};
+use serde::{Deserialize, Serialize};
 
 use super::version;
+use crate::core::report::report;
 
-pub(crate) struct LtsInfo {
-    pub(crate) latest: Option<String>,
-    pub(crate) name_to_ver: HashMap<String, String>,
-    pub(crate) ordered: Vec<(String, Option<String>)>,
+/// LTS info is refreshed from the network at most once per day.
+const LTS_CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
+const LTS_CACHE_FILENAME: &str = "node-lts.json";
+
+#[derive(Serialize, Deserialize)]
+pub struct LtsInfo {
+    pub latest: Option<String>,
+    pub name_to_ver: HashMap<String, String>,
+    pub ordered: Vec<(String, Option<String>)>,
 }
 
 /// Column indices in Node's index.tab format.
@@ -17,7 +26,7 @@ const COL_VERSION: usize = 0;
 const COL_LTS: usize = 9;
 const MIN_COLUMNS: usize = 10;
 
-pub(crate) fn parse_lts_info(text: &str) -> Vec<(String, Option<String>)> {
+pub fn parse_lts_info(text: &str) -> Vec<(String, Option<String>)> {
     text.lines()
         .skip(1)
         .filter_map(|line| {
@@ -48,33 +57,111 @@ pub(crate) fn get_lts_info() -> Result<&'static LtsInfo> {
         return Ok(info);
     }
 
-    let text = version::fetch_index_tab()?;
-    let ordered = parse_lts_info(&text);
+    let (cached, fresh) = load_lts_cache()?;
 
-    let mut name_to_ver: HashMap<String, String> = HashMap::new();
-
-    for (ver, lts) in &ordered {
-        if let Some(codename) = lts {
-            let lower = codename.to_lowercase();
-            name_to_ver.insert(lower, ver.clone());
+    let info = if let Some(cached_info) = cached {
+        if fresh {
+            cached_info
+        } else {
+            match version::fetch_index_tab() {
+                Ok(text) => {
+                    let info = build_lts_info(&text);
+                    // Persist parsed LTS info so hook-driven cd doesn't need the
+                    // network again for up to LTS_CACHE_TTL.
+                    if let Err(e) = save_lts_cache(&info) {
+                        report(format!("Warning: failed to write LTS cache: {e:#}"));
+                    }
+                    info
+                }
+                // Network failed: fall back to stale cache rather than erroring out.
+                Err(e) => {
+                    report(format!(
+                        "Warning: could not refresh LTS info ({e:#}), using cached data"
+                    ));
+                    cached_info
+                }
+            }
         }
-    }
-
-    let latest = ordered
-        .iter()
-        .rev()
-        .find(|(_, lts)| lts.is_some())
-        .map(|(v, _)| v.clone());
-
-    let info = LtsInfo {
-        latest,
-        name_to_ver,
-        ordered,
+    } else {
+        let text = version::fetch_index_tab()?;
+        let info = build_lts_info(&text);
+        if let Err(e) = save_lts_cache(&info) {
+            report(format!("Warning: failed to write LTS cache: {e:#}"));
+        }
+        info
     };
 
     // Only the first thread's result is stored; subsequent calls return the cached value
     let _ = LTS_INFO_CACHE.set(info);
     Ok(LTS_INFO_CACHE.get().expect("LTS info cache was just set"))
+}
+
+/// Build an [`LtsInfo`] from the raw Node `index.tab` text.
+pub fn build_lts_info(text: &str) -> LtsInfo {
+    let mut ordered = parse_lts_info(text);
+    // Normalize to newest-first so the logic below is independent of the
+    // upstream ordering of index.tab.
+    ordered.sort_by(|a, b| crate::core::version::compare_versions(&b.0, &a.0));
+
+    let mut name_to_ver: HashMap<String, String> = HashMap::new();
+    for (ver, lts) in &ordered {
+        if let Some(codename) = lts {
+            // First occurrence (newest) wins for a given codename.
+            name_to_ver
+                .entry(codename.to_lowercase())
+                .or_insert_with(|| ver.clone());
+        }
+    }
+
+    let latest = ordered
+        .iter()
+        .find(|(_, lts)| lts.is_some())
+        .map(|(v, _)| v.clone());
+
+    LtsInfo {
+        latest,
+        name_to_ver,
+        ordered,
+    }
+}
+
+fn lts_cache_file() -> std::path::PathBuf {
+    crate::config::cache_path(LTS_CACHE_FILENAME)
+}
+
+/// Load cached LTS info. Returns `(info, fresh)` where `fresh` is true only if
+/// the cache exists, is readable, and is younger than [`LTS_CACHE_TTL`].
+fn load_lts_cache() -> Result<(Option<LtsInfo>, bool)> {
+    let path = lts_cache_file();
+    let meta = match fs::metadata(&path) {
+        Ok(m) => m,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok((None, false)),
+        Err(e) => return Err(e).context("Failed to stat LTS cache"),
+    };
+    let modified = meta.modified().context("Failed to read LTS cache mtime")?;
+    let fresh = modified
+        .elapsed()
+        .is_ok_and(|elapsed| elapsed < LTS_CACHE_TTL);
+    match fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<LtsInfo>(&text).ok())
+    {
+        Some(info) => Ok((Some(info), fresh)),
+        None => Ok((None, fresh)),
+    }
+}
+
+/// Persist LTS info to disk (best-effort; callers may ignore the error).
+fn save_lts_cache(info: &LtsInfo) -> Result<()> {
+    let path = lts_cache_file();
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).context("Failed to create cache directory")?;
+    }
+    let json = serde_json::to_string(info).context("Failed to serialize LTS cache")?;
+    let tmp = path.with_extension("tmp");
+    fs::write(&tmp, &json).context("Failed to write LTS cache")?;
+    fs::rename(&tmp, &path).context("Failed to finalize LTS cache")?;
+    Ok(())
 }
 
 pub(crate) fn resolve_lts(desc: &str) -> Result<String> {
@@ -90,10 +177,11 @@ pub(crate) fn resolve_lts(desc: &str) -> Result<String> {
     if let Some(offset_str) = desc.strip_prefix('-')
         && let Ok(n) = offset_str.parse::<usize>()
     {
+        // `ordered` is newest-first, so iterating forward gives the LTS
+        // releases from newest to oldest.
         let mut lts_versions: Vec<&str> = info
             .ordered
             .iter()
-            .rev()
             .filter(|(_, lts)| lts.is_some())
             .map(|(v, _)| v.as_str())
             .collect();

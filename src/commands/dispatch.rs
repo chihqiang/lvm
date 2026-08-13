@@ -72,11 +72,12 @@ pub(crate) fn execute(
             let arg_ver = sub.get_one::<String>("version").map(String::as_str);
             let no_default = sub.get_flag("no-default");
             let set_default = !no_default;
+            let skip_install = sub.get_flag("skip-install");
             let save = sub.get_flag("save");
 
             let plans = resolve_install_args(arg_lang, arg_ver, registry)?;
             for (lang, ver) in &plans {
-                commands::use_version(registry, lang, ver.as_deref(), set_default)?;
+                commands::use_version(registry, lang, ver.as_deref(), set_default, skip_install)?;
             }
             if save && let Some(msg) = write_current_versions_to_lvmrc(registry, &plans)? {
                 output::info(msg);

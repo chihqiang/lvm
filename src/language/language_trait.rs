@@ -121,6 +121,12 @@ pub trait Language: Send + Sync {
         Ok(None)
     }
 
+    /// Extra symlinks (e.g. `~/.lvm/bin/cargo` for Rust) that should be
+    /// removed when the currently active version is uninstalled.
+    fn extra_bin_links(&self) -> Vec<std::path::PathBuf> {
+        vec![]
+    }
+
     fn use_version(&self, version: &str, set_default: bool) -> Result<()> {
         let version_dir = self.version_dir(version);
 
@@ -213,6 +219,7 @@ pub trait Language: Send + Sync {
             &self.version_dir(version),
             &self.current_link(),
             &self.bin_link(),
+            &self.extra_bin_links(),
             self.current_version()?.as_deref(),
             version,
         )

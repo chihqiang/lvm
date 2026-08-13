@@ -16,8 +16,8 @@ pub use fslink::{
     path_separator, remove_symlink,
 };
 pub use http::{
-    download, download_and_install, fetch_from_mirror, fetch_with_cache, get_url, set_offline,
-    set_parallel_downloads,
+    download, download_and_install, fetch_from_mirror, fetch_with_cache, fetch_with_cache_ttl,
+    get_url, set_offline, set_parallel_downloads,
 };
 pub use report::{
     flush_reports_to_stdout, report, report_already_installed, report_checksum_verified,

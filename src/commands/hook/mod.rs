@@ -17,7 +17,7 @@ fn print_lvm_auto_sh() {
     let lvm_bin = lvm_auto_function();
     let lvmrc = config::LVM_FILENAME;
     println!(
-        "__lvm_auto() {{ local dir=\"$PWD\" parent; while [[ -n \"$dir\" ]]; do [[ -f \"$dir/{lvmrc}\" || -f \"$dir/{NVM_FILENAME}\" ]] && {{ command -v \"{lvm_bin}\" &>/dev/null && \"{lvm_bin}\" use --no-default 2>/dev/null || true; return; }}; parent=\"$(dirname \"$dir\")\"; [[ \"$parent\" == \"$dir\" ]] && return; dir=\"$parent\"; done; }}"
+        "__lvm_auto() {{ local dir=\"$PWD\" parent; while [[ -n \"$dir\" ]]; do [[ -f \"$dir/{lvmrc}\" || -f \"$dir/{NVM_FILENAME}\" ]] && {{ command -v \"{lvm_bin}\" &>/dev/null && \"{lvm_bin}\" use --no-default --skip-install 2>/dev/null || true; return; }}; parent=\"$(dirname \"$dir\")\"; [[ \"$parent\" == \"$dir\" ]] && return; dir=\"$parent\"; done; }}"
     );
 }
 
@@ -40,7 +40,7 @@ fn hook_fish() {
     println!("    while test -n \"$dir\"");
     println!("        if test -f \"$dir/{lvmrc}\"; or test -f \"$dir/{NVM_FILENAME}\"");
     println!("            if command -q lvm");
-    println!("                lvm use --no-default 2>/dev/null");
+    println!("                lvm use --no-default --skip-install 2>/dev/null");
     println!("            end");
     println!("            return");
     println!("        end");
@@ -63,7 +63,7 @@ fn hook_powershell() {
     println!(
         "        if ((Test-Path (Join-Path $dir '{lvmrc}')) -or (Test-Path (Join-Path $dir '{NVM_FILENAME}'))) {{"
     );
-    println!("            $null = & lvm use --no-default 2>&1");
+    println!("            $null = & lvm use --no-default --skip-install 2>&1");
     println!("            break");
     println!("        }}");
     println!("        $dir = $dir.Parent");

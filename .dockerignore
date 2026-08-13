@@ -1,0 +1,17 @@
+# Build artifacts
+target/
+
+# VCS
+.git/
+.gitignore
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+
+# Local caches / temp
+*.log

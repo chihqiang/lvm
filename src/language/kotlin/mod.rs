@@ -3,7 +3,7 @@ mod version;
 
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{Context, Result, bail};
 
 use super::Language;
 use crate::config as lvm_config;
@@ -31,17 +31,33 @@ impl Language for KotlinLanguage {
         let tar_path =
             lvm_config::downloads_dir_or_default().join(config::tarball_filename(&resolved));
 
-        match language::download_and_install(
+        let verify_kotlin = |tar_path: &Path| -> Result<()> {
+            match fetch_sha256(&url) {
+                Ok(hex) => {
+                    language::report_verifying_checksum();
+                    language::verify_sha256(tar_path, &hex)?;
+                    language::report_checksum_verified();
+                    Ok(())
+                }
+                Err(e) => {
+                    language::report(format!(
+                        "Warning: checksum verification skipped for {} ({e})",
+                        tar_path.display()
+                    ));
+                    Ok(())
+                }
+            }
+        };
+
+        language::download_and_install(
             &url,
             &tar_path,
             &resolved,
             &version_dir,
             "Kotlin",
-            |_| Ok(()),
-        ) {
-            Ok(()) => Ok(resolved),
-            Err(e) => Err(e),
-        }
+            verify_kotlin,
+        )?;
+        Ok(resolved)
     }
 
     fn is_installed(&self, version_dir: &Path) -> bool {
@@ -84,4 +100,20 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
             language::resolve_partial_version(candidate, &avail, "Kotlin")
         }
     }
+}
+
+/// Fetch the SHA-256 checksum published alongside a Kotlin compiler zip
+/// (e.g. `kotlin-compiler-2.1.0.zip.sha256`).
+fn fetch_sha256(download_url: &str) -> Result<String> {
+    let sha_url = format!("{download_url}.sha256");
+    let text = language::get_url(&sha_url)
+        .call()
+        .context("Failed to fetch Kotlin checksum")?
+        .into_string()
+        .context("Failed to read Kotlin checksum")?;
+    let hex = text.split_whitespace().next().unwrap_or_default();
+    if hex.len() != 64 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        bail!("Invalid Kotlin checksum file content");
+    }
+    Ok(hex.to_string())
 }

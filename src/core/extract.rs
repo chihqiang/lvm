@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 use crate::core::report::report;
 use anyhow::{Context, Result, bail};
 
-fn strip_top_level(path: &Path) -> Result<PathBuf> {
+/// Strip the top-level directory component from an archive entry path,
+/// rejecting any parent-directory traversal (`..`) in the remainder.
+pub fn strip_top_level(path: &Path) -> Result<PathBuf> {
     let stripped: PathBuf = path.components().skip(1).collect();
     if stripped
         .components()

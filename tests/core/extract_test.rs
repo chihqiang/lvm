@@ -69,3 +69,39 @@ fn test_extract_invalid_archive() {
     let result = lvm::core::extract::extract_archive(&bad_path, &out_dir);
     assert!(result.is_err());
 }
+
+/// Verify a zip archive can be validated without extraction.
+#[test]
+fn test_verify_zip_archive() {
+    let dir = tempfile::tempdir().unwrap();
+
+    let zip_path = dir.path().join("valid.zip");
+    create_test_zip(&zip_path, "a.txt", b"hi");
+    assert!(lvm::core::extract::verify_zip_archive(&zip_path).is_ok());
+
+    let bad_path = dir.path().join("bad.zip");
+    fs::write(&bad_path, b"not a zip").unwrap();
+    assert!(lvm::core::extract::verify_zip_archive(&bad_path).is_err());
+}
+
+// ─── strip_top_level (moved out of src) ───
+
+#[test]
+fn strip_top_level_removes_first_component() {
+    use std::path::Path;
+    assert_eq!(
+        lvm::core::extract::strip_top_level(Path::new("top-level/sub/file.txt")).unwrap(),
+        Path::new("sub/file.txt")
+    );
+    // Empty after stripping (only one component) is allowed.
+    assert!(lvm::core::extract::strip_top_level(Path::new("top-level")).is_ok());
+}
+
+#[test]
+fn strip_top_level_rejects_parent_traversal() {
+    use std::path::Path;
+    // `..` after the top-level component must be rejected (path traversal).
+    assert!(lvm::core::extract::strip_top_level(Path::new("top-level/../../evil.txt")).is_err());
+    assert!(lvm::core::extract::strip_top_level(Path::new("top-level/../evil.txt")).is_err());
+    assert!(lvm::core::extract::strip_top_level(Path::new("top-level/a/../../..")).is_err());
+}

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::{Context, Result, bail};
 use semver::Version;
 
@@ -6,11 +8,12 @@ use crate::language;
 
 use super::NodeLanguage;
 use super::config::{
-    index_tab_path, latest_version_path, node_mirror, node_versions_cache_filename, tarball_prefix,
+    index_tab_path, latest_version_path, node_latest_cache_filename, node_mirror,
+    node_versions_cache_filename, tarball_prefix,
 };
 use super::lts;
 
-fn version_from_tarball_name(filename: &str) -> Option<String> {
+pub fn version_from_tarball_name(filename: &str) -> Option<String> {
     let s = filename.strip_prefix(tarball_prefix())?;
     let parts: Vec<&str> = s.split('-').collect();
     if parts.len() < 3 {
@@ -26,7 +29,13 @@ impl NodeLanguage {
     }
 
     pub(crate) fn fetch_latest_version() -> Result<String> {
-        let text = Self::fetch_text(latest_version_path())?;
+        // Cache the "latest" index for 6h so auto-switch (hook) doesn't hit the
+        // network on every directory change.
+        let cache_file = lvm_config::cache_path(node_latest_cache_filename());
+        let text =
+            language::fetch_with_cache_ttl(&cache_file, Duration::from_secs(6 * 60 * 60), || {
+                Self::fetch_text(latest_version_path())
+            })?;
 
         for line in text.lines() {
             if let Some(filename) = line.split_whitespace().nth(1)
@@ -44,7 +53,7 @@ impl NodeLanguage {
         Ok(Self::parse_index_tab(&text))
     }
 
-    pub(crate) fn parse_index_tab(text: &str) -> Vec<String> {
+    pub fn parse_index_tab(text: &str) -> Vec<String> {
         text.lines()
             .skip(1)
             .filter_map(|line| {
@@ -57,7 +66,7 @@ impl NodeLanguage {
             .collect()
     }
 
-    fn version_from_url(url: &str) -> Result<String> {
+    pub fn version_from_url(url: &str) -> Result<String> {
         let filename = url
             .rsplit('/')
             .next()

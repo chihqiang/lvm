@@ -61,6 +61,12 @@ fn use_subcommand() -> Command {
                 .action(clap::ArgAction::SetTrue),
         )
         .arg(
+            Arg::new("skip-install")
+                .long("skip-install")
+                .help("If the version is not installed, skip instead of downloading")
+                .action(clap::ArgAction::SetTrue),
+        )
+        .arg(
             Arg::new("save")
                 .long("save")
                 .short('w')

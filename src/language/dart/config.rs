@@ -8,8 +8,10 @@ crate::define_env_once!(
 
 const DART_EXT: &str = "zip";
 
-pub(crate) fn tarball_filename(_version: &str, os: &str, arch: &str) -> String {
-    format!("dartsdk-{os}-{arch}-release.{DART_EXT}")
+pub(crate) fn tarball_filename(version: &str, os: &str, arch: &str) -> String {
+    // The upstream tarball name contains no version, so embed it in the local
+    // cache filename to avoid different versions sharing one cache entry.
+    format!("dartsdk-{version}-{os}-{arch}-release.{DART_EXT}")
 }
 
 pub(crate) fn download_url(version: &str, os: &str, arch: &str) -> String {
