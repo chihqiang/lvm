@@ -11,6 +11,7 @@ pub(crate) fn use_version(
     language: &str,
     version: Option<&str>,
     set_default: bool,
+    skip_install: bool,
 ) -> Result<()> {
     let p = get_language(registry, language)?;
 
@@ -43,6 +44,13 @@ pub(crate) fn use_version(
     if let Some(resolved) = try_resolve_installed_local(p, &version)? {
         p.use_version(&resolved, set_default)?;
         flush();
+        return Ok(());
+    }
+
+    if skip_install {
+        output::info(format!(
+            "{language} {version} is not installed (skipped; run 'lvm install {language} {version}' to install it)"
+        ));
         return Ok(());
     }
 
