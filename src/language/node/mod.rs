@@ -1,5 +1,5 @@
 pub(crate) mod config;
-pub(crate) mod lts;
+pub mod lts;
 mod nvmrc;
 mod version;
 
@@ -15,6 +15,7 @@ use crate::language;
 
 pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
 pub use nvmrc::{read_nvmrc, resolve_nvmrc_version};
+pub use version::version_from_tarball_name;
 
 /// Node.js language
 pub struct NodeLanguage;

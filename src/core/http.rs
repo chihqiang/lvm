@@ -266,7 +266,16 @@ fn prepare_download(url: &str, existing: u64) -> Result<(ureq::Response, bool, u
         req = req.set("Range", &format!("bytes={existing}-"));
     }
 
-    let resp = req.call().context("Download request failed")?;
+    // ureq returns 4xx/5xx as Err(Error::Status). Treat 416 (file already
+    // complete) as success so the caller leaves the existing file untouched.
+    let resp = match req.call() {
+        Ok(r) => r,
+        Err(ureq::Error::Status(416, r)) if existing > 0 => {
+            report("File already fully downloaded");
+            return Ok((r, false, 0));
+        }
+        Err(e) => return Err(e).context("Download request failed"),
+    };
     let status = resp.status();
 
     // 416 Range Not Satisfiable: file is already fully downloaded

@@ -152,3 +152,27 @@ fn write_current_versions_returns_none_when_nothing_active() {
     assert_eq!(msg, None);
     assert!(!lvmrc_exists);
 }
+
+#[test]
+fn test_is_version_like() {
+    use lvm::core::plan::is_version_like;
+
+    // Pure versions / partial versions.
+    assert!(is_version_like("22"));
+    assert!(is_version_like("22.3"));
+    assert!(is_version_like("22.3.1"));
+    assert!(is_version_like("v22.3.1"));
+    // Semver ranges (semver 1.0 requires comma-separated comparators).
+    assert!(is_version_like(">=20.0.0, <21.0.0"));
+    assert!(is_version_like("^22.0"));
+    // Language names / non-versions.
+    assert!(!is_version_like("node"));
+    assert!(!is_version_like("go"));
+    // Malformed inputs.
+    assert!(!is_version_like(""));
+    assert!(!is_version_like("."));
+    assert!(!is_version_like(".20"));
+    assert!(!is_version_like("22."));
+    assert!(!is_version_like("22..1"));
+    assert!(!is_version_like("22a"));
+}

@@ -14,10 +14,10 @@ const LTS_CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
 const LTS_CACHE_FILENAME: &str = "node-lts.json";
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct LtsInfo {
-    pub(crate) latest: Option<String>,
-    pub(crate) name_to_ver: HashMap<String, String>,
-    pub(crate) ordered: Vec<(String, Option<String>)>,
+pub struct LtsInfo {
+    pub latest: Option<String>,
+    pub name_to_ver: HashMap<String, String>,
+    pub ordered: Vec<(String, Option<String>)>,
 }
 
 /// Column indices in Node's index.tab format.
@@ -26,7 +26,7 @@ const COL_VERSION: usize = 0;
 const COL_LTS: usize = 9;
 const MIN_COLUMNS: usize = 10;
 
-pub(crate) fn parse_lts_info(text: &str) -> Vec<(String, Option<String>)> {
+pub fn parse_lts_info(text: &str) -> Vec<(String, Option<String>)> {
     text.lines()
         .skip(1)
         .filter_map(|line| {
@@ -101,7 +101,7 @@ pub(crate) fn get_lts_info() -> Result<&'static LtsInfo> {
 }
 
 /// Build an [`LtsInfo`] from the raw Node `index.tab` text.
-fn build_lts_info(text: &str) -> LtsInfo {
+pub fn build_lts_info(text: &str) -> LtsInfo {
     let mut ordered = parse_lts_info(text);
     // Normalize to newest-first so the logic below is independent of the
     // upstream ordering of index.tab.
@@ -206,59 +206,4 @@ pub(crate) fn resolve_lts(desc: &str) -> Result<String> {
     }
 
     bail!("Unknown LTS release: {desc}")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Sample index.tab lines (version, date, files, npm, v8, uv, zlib,
-    /// openssl, modules, lts).
-    const SAMPLE_TAB: &str = concat!(
-        "version\tdate\tfiles\tnpm\tv8\tuv\tzlib\topenssl\tmodules\tlts\n",
-        "v23.0.0\t2024-10-15\t17\t10.9.0\t12.4.254.20\t1.48.0\t1.3.1\t3.0.13\t127\t\n",
-        "v22.11.0\t2024-10-15\t22\t10.9.0\t12.4.254.20\t1.48.0\t1.3.1\t3.0.13\t127\tJod\n",
-        "v20.18.1\t2024-10-15\t21\t10.8.2\t11.3.244.8\t1.48.0\t1.3.1\t3.0.13\t115\tIron\n",
-        "v20.17.0\t2024-09-26\t21\t10.8.2\t11.3.244.8\t1.48.0\t1.3.1\t3.0.13\t115\tIron\n",
-    );
-
-    #[test]
-    fn build_lts_info_parses_mapping_and_latest() {
-        let info = build_lts_info(SAMPLE_TAB);
-
-        assert_eq!(info.latest.as_deref(), Some("22.11.0"));
-        assert_eq!(info.name_to_ver.get("iron"), Some(&"20.18.1".to_string()));
-        assert_eq!(info.name_to_ver.get("jod"), Some(&"22.11.0".to_string()));
-        // Latest stable (non-LTS) version is present in ordered, not in LTS map.
-        assert!(!info.name_to_ver.contains_key("23.0.0"));
-    }
-
-    #[test]
-    fn lts_info_serde_roundtrip_preserves_data() {
-        let info = build_lts_info(SAMPLE_TAB);
-        let json = serde_json::to_string(&info).expect("serialize");
-        let decoded: LtsInfo = serde_json::from_str(&json).expect("deserialize");
-
-        assert_eq!(decoded.latest, info.latest);
-        assert_eq!(decoded.name_to_ver, info.name_to_ver);
-        assert_eq!(decoded.ordered, info.ordered);
-    }
-
-    #[test]
-    fn resolve_lts_by_name_and_offset() {
-        let info = build_lts_info(SAMPLE_TAB);
-        // Verify name lookup logic used by resolve_lts (newest patch wins).
-        assert_eq!(
-            info.name_to_ver.get("iron").map(String::as_str),
-            Some("20.18.1")
-        );
-        // `ordered` is newest-first; newest LTS major (22) is first.
-        let lts_majors: Vec<&str> = info
-            .ordered
-            .iter()
-            .filter(|(_, lts)| lts.is_some())
-            .map(|(v, _)| v.as_str())
-            .collect();
-        assert_eq!(lts_majors.first(), Some(&"22.11.0"));
-    }
 }

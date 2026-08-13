@@ -13,10 +13,12 @@ pub fn is_version_like(s: &str) -> bool {
         return true;
     }
     let stripped = s.trim_start_matches('v');
+    // Every dot-separated segment must be a non-empty run of digits, which
+    // rejects malformed inputs like "22..1" or "22a".
     !stripped.is_empty()
-        && !stripped.starts_with('.')
-        && !stripped.ends_with('.')
-        && stripped.chars().all(|c| c.is_ascii_digit() || c == '.')
+        && stripped
+            .split('.')
+            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()))
 }
 
 pub fn resolve_install_args(

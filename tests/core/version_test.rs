@@ -125,3 +125,46 @@ fn test_parse_github_releases_invalid_json() {
     let result = lvm::core::version::parse_github_releases("not json");
     assert!(result.is_err());
 }
+
+#[test]
+fn test_resolve_version_none_calls_latest() {
+    let result = lvm::core::version::resolve_version(
+        "node",
+        None,
+        &|| Ok("22.0.0".to_string()),
+        &|| unreachable!(),
+    )
+    .unwrap();
+    assert_eq!(result, "22.0.0");
+}
+
+#[test]
+fn test_resolve_version_exact_semver() {
+    let result = lvm::core::version::resolve_version(
+        "node",
+        Some("v22.3.1"),
+        &|| unreachable!(),
+        &|| unreachable!(),
+    )
+    .unwrap();
+    assert_eq!(result, "22.3.1");
+}
+
+#[test]
+fn test_resolve_version_partial_falls_back_to_fetch_all() {
+    let result =
+        lvm::core::version::resolve_version("node", Some("22"), &|| unreachable!(), &|| {
+            Ok(vec!["22.3.1".to_string(), "20.0.0".to_string()])
+        })
+        .unwrap();
+    assert_eq!(result, "22.3.1");
+}
+
+#[test]
+fn test_resolve_version_unknown_errors() {
+    let result =
+        lvm::core::version::resolve_version("node", Some("99"), &|| unreachable!(), &|| {
+            Ok(vec!["20.0.0".to_string()])
+        });
+    assert!(result.is_err());
+}

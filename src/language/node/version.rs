@@ -13,7 +13,7 @@ use super::config::{
 };
 use super::lts;
 
-fn version_from_tarball_name(filename: &str) -> Option<String> {
+pub fn version_from_tarball_name(filename: &str) -> Option<String> {
     let s = filename.strip_prefix(tarball_prefix())?;
     let parts: Vec<&str> = s.split('-').collect();
     if parts.len() < 3 {
@@ -53,7 +53,7 @@ impl NodeLanguage {
         Ok(Self::parse_index_tab(&text))
     }
 
-    pub(crate) fn parse_index_tab(text: &str) -> Vec<String> {
+    pub fn parse_index_tab(text: &str) -> Vec<String> {
         text.lines()
             .skip(1)
             .filter_map(|line| {
@@ -66,7 +66,7 @@ impl NodeLanguage {
             .collect()
     }
 
-    fn version_from_url(url: &str) -> Result<String> {
+    pub fn version_from_url(url: &str) -> Result<String> {
         let filename = url
             .rsplit('/')
             .next()
