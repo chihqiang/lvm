@@ -189,6 +189,11 @@ pub fn download(url: &str, dest: &Path, show_progress: bool) -> Result<()> {
 
     let existing = fs::metadata(dest).map_or(0, |m| m.len());
     let (resp, is_resume, total) = prepare_download(url, existing)?;
+    // 416 Range Not Satisfiable means the existing file is already complete;
+    // leave it untouched instead of truncating and rewriting it.
+    if resp.status() == 416 {
+        return Ok(());
+    }
     let mut file = open_dest_file(dest, is_resume, existing)?;
 
     if !is_resume && existing > 0 {

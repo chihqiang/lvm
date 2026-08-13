@@ -52,7 +52,10 @@ pub fn fetch_github_releases_paginated(
         let mut all_versions = Vec::new();
         let separator = if base_url.contains('?') { "&" } else { "?" };
 
-        for page in 1..=10 {
+        // GitHub caps at 100 results per page; allow up to 100 pages (10,000
+        // versions). Realistically we break as soon as a page returns fewer
+        // than 100 entries.
+        for page in 1..=100 {
             let url = format!("{base_url}{separator}page={page}");
             let response = get_url(&url)
                 .call()

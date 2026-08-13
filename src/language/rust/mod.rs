@@ -4,7 +4,7 @@ mod version;
 use std::fs;
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 
 use super::Language;
 use crate::config as lvm_config;
@@ -51,13 +51,30 @@ impl Language for RustLanguage {
                 let url = config::download_url(&resolved, &target);
                 let tar_path = lvm_config::downloads_dir_or_default()
                     .join(config::tarball_filename(&resolved, &target));
+                let verify_rust = |tar_path: &Path| -> Result<()> {
+                    match fetch_sha256(&url) {
+                        Ok(hex) => {
+                            language::report_verifying_checksum();
+                            language::verify_sha256(tar_path, &hex)?;
+                            language::report_checksum_verified();
+                            Ok(())
+                        }
+                        Err(e) => {
+                            language::report(format!(
+                                "Warning: checksum verification skipped for {} ({e})",
+                                tar_path.display()
+                            ));
+                            Ok(())
+                        }
+                    }
+                };
                 language::download_and_install(
                     &url,
                     &tar_path,
                     &resolved,
                     &version_dir,
                     "Rust",
-                    |_| Ok(()),
+                    verify_rust,
                 )
             },
         )
@@ -111,6 +128,12 @@ impl Language for RustLanguage {
         Ok(())
     }
 
+    fn extra_bin_links(&self) -> Vec<std::path::PathBuf> {
+        let exe = language::exe_suffix();
+        let bin_home = lvm_config::lvm_home_cached().join(lvm_config::BIN_DIR);
+        vec![bin_home.join(format!("cargo{exe}"))]
+    }
+
     fn env_extra_paths(&self) -> Vec<std::path::PathBuf> {
         vec![self.current_link().join(lvm_config::BIN_DIR)]
     }
@@ -132,4 +155,20 @@ fn resolve_version(version: Option<&str>) -> Result<String> {
         &|| RustLanguage::fetch_latest_version(),
         &|| RustLanguage::fetch_all_versions(),
     )
+}
+
+/// Fetch the SHA-256 checksum published alongside a Rust dist tarball
+/// (e.g. `rust-1.80.0-x86_64-unknown-linux-gnu.tar.gz.sha256`).
+fn fetch_sha256(download_url: &str) -> Result<String> {
+    let sha_url = format!("{download_url}.sha256");
+    let text = language::get_url(&sha_url)
+        .call()
+        .context("Failed to fetch Rust checksum")?
+        .into_string()
+        .context("Failed to read Rust checksum")?;
+    let hex = text.split_whitespace().next().unwrap_or_default();
+    if hex.len() != 64 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        bail!("Invalid Rust checksum file content");
+    }
+    Ok(hex.to_string())
 }

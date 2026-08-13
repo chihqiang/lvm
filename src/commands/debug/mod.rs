@@ -45,7 +45,8 @@ pub(crate) fn debug(registry: &LanguageRegistry) {
                 .list_names()
                 .iter()
                 .filter_map(|name| {
-                    let exe = p.join(name);
+                    // Account for platform executable suffix (e.g. node.exe).
+                    let exe = p.join(format!("{}{}", name, std::env::consts::EXE_SUFFIX));
                     if exe.exists() {
                         Some(name.to_string())
                     } else {

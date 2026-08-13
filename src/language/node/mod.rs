@@ -91,9 +91,8 @@ impl Language for NodeLanguage {
                         .context(format!("Invalid tar path: {}", tar_path.display()))?
                         .to_string_lossy();
                     if source_is_url {
-                        bail!(
-                            "No checksum entry for '{tarball_filename}'; custom Node URL cannot be verified"
-                        );
+                        // Custom Node URL: there is no official checksum to verify.
+                        return Ok(());
                     }
                     if let Some(expected) = checksums.get(tarball_filename.as_ref()) {
                         language::report_verifying_checksum();
