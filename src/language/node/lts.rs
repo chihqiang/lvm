@@ -6,8 +6,8 @@ use std::time::Duration;
 use anyhow::{Context, Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 
-use crate::core::report::report;
 use super::version;
+use crate::core::report::report;
 
 /// LTS info is refreshed from the network at most once per day.
 const LTS_CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
@@ -59,25 +59,37 @@ pub(crate) fn get_lts_info() -> Result<&'static LtsInfo> {
 
     let (cached, fresh) = load_lts_cache()?;
 
-    let info = if cached.is_some() && fresh {
-        cached.expect("cached is Some")
+    let info = if let Some(cached_info) = cached {
+        if fresh {
+            cached_info
+        } else {
+            match version::fetch_index_tab() {
+                Ok(text) => {
+                    let info = build_lts_info(&text);
+                    // Persist parsed LTS info so hook-driven cd doesn't need the
+                    // network again for up to LTS_CACHE_TTL.
+                    if let Err(e) = save_lts_cache(&info) {
+                        report(format!("Warning: failed to write LTS cache: {e:#}"));
+                    }
+                    info
+                }
+                // Network failed: fall back to stale cache rather than erroring out.
+                Err(e) => {
+                    report(format!(
+                        "Warning: could not refresh LTS info ({e:#}), using cached data"
+                    ));
+                    cached_info
+                }
+            }
+        }
     } else {
         match version::fetch_index_tab() {
             Ok(text) => {
                 let info = build_lts_info(&text);
-                // Persist parsed LTS info so hook-driven cd doesn't need the
-                // network again for up to LTS_CACHE_TTL.
                 if let Err(e) = save_lts_cache(&info) {
                     report(format!("Warning: failed to write LTS cache: {e:#}"));
                 }
                 info
-            }
-            // Network failed: fall back to stale cache rather than erroring out.
-            Err(e) if cached.is_some() => {
-                report(format!(
-                    "Warning: could not refresh LTS info ({e:#}), using cached data"
-                ));
-                cached.expect("cached is Some")
             }
             Err(e) => return Err(e),
         }
@@ -133,7 +145,7 @@ fn load_lts_cache() -> Result<(Option<LtsInfo>, bool)> {
     let modified = meta.modified().context("Failed to read LTS cache mtime")?;
     let fresh = modified
         .elapsed()
-        .map_or(false, |elapsed| elapsed < LTS_CACHE_TTL);
+        .is_ok_and(|elapsed| elapsed < LTS_CACHE_TTL);
     match fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str::<LtsInfo>(&text).ok())
@@ -218,7 +230,7 @@ mod tests {
         assert_eq!(info.name_to_ver.get("iron"), Some(&"20.18.1".to_string()));
         assert_eq!(info.name_to_ver.get("jod"), Some(&"22.11.0".to_string()));
         // Latest stable (non-LTS) version is present in ordered, not in LTS map.
-        assert!(info.name_to_ver.get("23.0.0").is_none());
+        assert!(!info.name_to_ver.contains_key("23.0.0"));
     }
 
     #[test]

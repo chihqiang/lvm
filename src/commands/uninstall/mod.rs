@@ -9,8 +9,7 @@ pub(crate) fn uninstall(registry: &LanguageRegistry, language: &str, version: &s
     // versions, so uninstalling by the same shorthand used to install works.
     // Falls back to the literal version if it isn't a known installed version
     // (uninstall_version will then report it as not installed).
-    let resolved =
-        try_resolve_installed_local(p, version)?.unwrap_or_else(|| version.to_string());
+    let resolved = try_resolve_installed_local(p, version)?.unwrap_or_else(|| version.to_string());
     let result = p.uninstall(&resolved);
     flush();
     result

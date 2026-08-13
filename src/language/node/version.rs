@@ -32,11 +32,10 @@ impl NodeLanguage {
         // Cache the "latest" index for 6h so auto-switch (hook) doesn't hit the
         // network on every directory change.
         let cache_file = lvm_config::cache_path(node_latest_cache_filename());
-        let text = language::fetch_with_cache_ttl(
-            &cache_file,
-            Duration::from_secs(6 * 60 * 60),
-            || Self::fetch_text(latest_version_path()),
-        )?;
+        let text =
+            language::fetch_with_cache_ttl(&cache_file, Duration::from_secs(6 * 60 * 60), || {
+                Self::fetch_text(latest_version_path())
+            })?;
 
         for line in text.lines() {
             if let Some(filename) = line.split_whitespace().nth(1)
