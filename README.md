@@ -469,6 +469,8 @@ eval "$(lvm hook)"   # .lvmrc / .nvmrc auto-switch hook
 └── default-packages      # Node.js auto-install list
 ```
 
+On Windows, official Node.js zip archives unpack with `node.exe`, `npm.cmd` and `npx.cmd` at the root of the version directory instead of in `bin/`; lvm detects both layouts automatically.
+
 ## Comparison
 
 | Feature | nvm | fnm | gvm | lvm |

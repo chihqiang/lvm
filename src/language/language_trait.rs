@@ -33,6 +33,17 @@ pub trait Language: Send + Sync {
         self.name()
     }
 
+    /// Directory, relative to an installed version, that holds executables.
+    /// Empty when the executables live at the root of the version directory
+    /// (e.g. Node.js on Windows).
+    fn bin_subdir(&self) -> &'static str {
+        config::BIN_DIR
+    }
+
+    fn bin_file_name(&self) -> String {
+        format!("{}{}", self.binary_name(), std::env::consts::EXE_SUFFIX)
+    }
+
     // ─── Path helpers ───
 
     fn lvm_dir(&self) -> PathBuf {
@@ -61,14 +72,22 @@ pub trait Language: Send + Sync {
             .join(format!("{prefix}{}", self.strip_version_prefix(version)))
     }
 
+    /// Directory containing the executables of an installed version.
+    fn version_bin_dir(&self, version_dir: &Path) -> PathBuf {
+        match self.bin_subdir() {
+            "" => version_dir.to_path_buf(),
+            sub => version_dir.join(sub),
+        }
+    }
+
+    /// Executable directory reachable through the `current` symlink.
+    fn current_bin_dir(&self) -> PathBuf {
+        self.version_bin_dir(&self.current_link())
+    }
+
     fn is_installed(&self, version_dir: &Path) -> bool {
-        version_dir
-            .join(config::BIN_DIR)
-            .join(format!(
-                "{}{}",
-                self.binary_name(),
-                std::env::consts::EXE_SUFFIX
-            ))
+        self.version_bin_dir(version_dir)
+            .join(self.bin_file_name())
             .exists()
     }
 
@@ -113,6 +132,13 @@ pub trait Language: Send + Sync {
         None
     }
 
+    /// Executable file name of the package manager, including any
+    /// platform-specific extension (e.g. `npm.cmd` on Windows).
+    fn package_manager_executable(&self) -> Option<String> {
+        self.package_manager_binary()
+            .map(|b| format!("{b}{}", std::env::consts::EXE_SUFFIX))
+    }
+
     fn packages_dir_name(&self) -> Option<&'static str> {
         None
     }
@@ -138,7 +164,7 @@ pub trait Language: Send + Sync {
             &version_dir,
             &self.current_link(),
             &self.bin_link(),
-            self.binary_name(),
+            &self.current_bin_dir().join(self.bin_file_name()),
         )?;
 
         self.post_switch(version)?;
@@ -229,11 +255,9 @@ pub trait Language: Send + Sync {
     fn binary_path(&self, version: &str) -> Result<String> {
         let version = self.strip_version_prefix(version);
         let version_dir = self.version_dir(version);
-        let bin = version_dir.join(config::BIN_DIR).join(format!(
-            "{}{}",
-            self.binary_name(),
-            std::env::consts::EXE_SUFFIX
-        ));
+        let bin = self
+            .version_bin_dir(&version_dir)
+            .join(self.bin_file_name());
         if bin.exists() {
             Ok(bin.to_string_lossy().to_string())
         } else {

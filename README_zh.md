@@ -470,6 +470,8 @@ eval "$(lvm hook)"   # .lvmrc / .nvmrc 自动切换 hook
 └── default-packages      # Node.js 自动安装列表
 ```
 
+在 Windows 上，官方 Node.js zip 包会把 `node.exe`、`npm.cmd`、`npx.cmd` 解压到版本目录根目录而非 `bin/` 子目录；lvm 会自动识别这两种布局。
+
 ## Comparison
 
 | Feature | nvm | fnm | gvm | lvm |
