@@ -1,6 +1,5 @@
 use std::process::Command;
 
-use lvm::language;
 use lvm::language::LanguageRegistry;
 
 use crate::commands::{binary_dir, get_language, output};
@@ -23,12 +22,15 @@ pub(crate) fn reinstall_packages(
         ));
         return Ok(());
     };
+    let Some(pkg_mgr_exe) = lang.package_manager_executable() else {
+        return Ok(());
+    };
     let Some(modules_dir) = lang.packages_dir_name() else {
         return Ok(());
     };
 
     let from_bin_dir = binary_dir(registry, language, from_version)?;
-    let pkg_mgr_path = from_bin_dir.join(format!("{}{}", pkg_manager, language::exe_suffix()));
+    let pkg_mgr_path = from_bin_dir.join(&pkg_mgr_exe);
     if !pkg_mgr_path.exists() {
         output::info(format!(
             "No {pkg_manager} found in {from_version}, skipping package reinstallation"
@@ -97,12 +99,11 @@ pub(crate) fn reinstall_packages(
         "Reinstalling {} global package(s)...",
         packages.len()
     ));
-    let status =
-        Command::new(to_bin_dir.join(format!("{}{}", pkg_manager, language::exe_suffix())))
-            .args(["install", "-g", "--quiet"])
-            .args(&packages)
-            .status()
-            .context("Failed to install packages")?;
+    let status = Command::new(to_bin_dir.join(&pkg_mgr_exe))
+        .args(["install", "-g", "--quiet"])
+        .args(&packages)
+        .status()
+        .context("Failed to install packages")?;
 
     if !status.success() {
         bail!("Failed to reinstall some packages");

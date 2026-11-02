@@ -13,7 +13,7 @@ use crate::config as lvm_config;
 use crate::core::http::get_url;
 use crate::language;
 
-pub(crate) use config::{default_packages_filename, node_mirror, npm_binary_name};
+pub(crate) use config::{default_packages_filename, node_mirror};
 pub use nvmrc::{read_nvmrc, resolve_nvmrc_version};
 pub use version::version_from_tarball_name;
 
@@ -23,6 +23,16 @@ pub struct NodeLanguage;
 impl Language for NodeLanguage {
     fn name(&self) -> &'static str {
         "node"
+    }
+
+    /// Official Node.js archives unpack on Windows with `node.exe`, `npm.cmd`
+    /// and `npx.cmd` at the root, while Unix tarballs use `bin/`.
+    fn bin_subdir(&self) -> &'static str {
+        if cfg!(windows) {
+            ""
+        } else {
+            lvm_config::BIN_DIR
+        }
     }
 
     fn install(&self, version: Option<&str>) -> Result<String> {
@@ -149,6 +159,10 @@ impl Language for NodeLanguage {
         Some("npm")
     }
 
+    fn package_manager_executable(&self) -> Option<String> {
+        Some(config::npm_executable_name())
+    }
+
     fn packages_dir_name(&self) -> Option<&'static str> {
         Some("node_modules")
     }
@@ -162,11 +176,9 @@ impl Language for NodeLanguage {
 
     fn post_install(&self, version: &str) -> Result<()> {
         let version_dir = self.version_dir(version);
-        let npm_path = version_dir.join(lvm_config::BIN_DIR).join(format!(
-            "{}{}",
-            npm_binary_name(),
-            language::exe_suffix()
-        ));
+        let npm_path = self
+            .version_bin_dir(&version_dir)
+            .join(config::npm_executable_name());
         install_default_packages(&npm_path)
     }
 }

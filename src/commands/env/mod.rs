@@ -18,7 +18,7 @@ pub(crate) fn env(registry: &LanguageRegistry) {
         if let Some(lang) = registry.get(name)
             && lang.current_version().is_ok_and(|v| v.is_some())
         {
-            path_entries.push(lang.current_link().join(config::BIN_DIR));
+            path_entries.push(lang.current_bin_dir());
             path_entries.extend(lang.env_extra_paths());
             extra_vars.extend(lang.env_extra_vars());
         }

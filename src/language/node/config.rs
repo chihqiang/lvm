@@ -60,6 +60,16 @@ pub(crate) fn npm_binary_name() -> &'static str {
     "npm"
 }
 
+/// npm's executable name inside a Node install. Windows archives ship
+/// `npm.cmd` shims instead of a plain `npm` entry point.
+pub(crate) fn npm_executable_name() -> String {
+    if cfg!(windows) {
+        format!("{}.cmd", npm_binary_name())
+    } else {
+        npm_binary_name().to_string()
+    }
+}
+
 pub(crate) fn node_versions_cache_filename() -> &'static str {
     "node-versions.tab"
 }
