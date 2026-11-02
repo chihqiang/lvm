@@ -21,15 +21,6 @@ pub(crate) fn download_url(version: &str, os: &str, arch: &str) -> String {
     )
 }
 
-fn os_name(system_os: &str) -> &str {
-    match system_os {
-        "macos" => "macos",
-        "linux" => "linux",
-        "windows" => "windows",
-        other => other,
-    }
-}
-
 fn arch_name(system_arch: &str) -> &str {
     match system_arch {
         "aarch64" => "arm64",
@@ -39,7 +30,7 @@ fn arch_name(system_arch: &str) -> &str {
 }
 
 pub(crate) fn target_os() -> &'static str {
-    os_name(env::consts::OS)
+    env::consts::OS
 }
 
 pub(crate) fn target_arch() -> &'static str {
